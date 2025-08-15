@@ -62,7 +62,7 @@ _PLANNER_PROMPT = ChatPromptTemplate.from_messages([
     ("system",
      "You are {name}, a {role}. {description}\n"
      "Context:\n{context}\n\nTask: {task}"),
-    ("user", """List the concrete subtasks required to accomplish the task,
+    ("user", """Generate a list (5-12) of subtasks required to accomplish the task,
 along with a detailed, specific implementation plan for each.
 
 Steps already completed: {summary}
