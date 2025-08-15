@@ -34,7 +34,7 @@ _AUDITOR_PROMPT = ChatPromptTemplate.from_messages([
      "You are an ML Auditor. Decide if the developer's execution result is adequate for the subtask and the implementation plan. "
      "If adequate, set accept=True and leave improved_plan empty. "
      "If not adequate, set accept=False and RETURN ONE improved implementation plan as a single paragraph. "
-     "The improved plan must be concrete and actionable, but DO NOT write code."),
+     "The improved plan must be concrete and actionable also contain the original plan, but DO NOT write code."),
     ("user", """\
 Task Phase: {task_phase}
 Subtask: {subtask}

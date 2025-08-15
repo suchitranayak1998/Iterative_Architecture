@@ -38,10 +38,6 @@ class PlanBody(BaseModel):
         return self
 
 
-class PlanOutput(PlanBody):
-    """Alias kept for symmetry with Swarm's ProposalOutput."""
-    pass
-
 
 # -------------------------------
 # Planner agent config (parallels SwarmAgentData)
@@ -99,9 +95,9 @@ class PlannerAgent:
         self.llm = llm
         self.data = data or PlannerAgentData()
 
-    def generate_plan(self, task: str, context: str, summary: str = "") -> PlanOutput:
-        chain = _PLANNER_PROMPT | self.llm.with_structured_output(PlanOutput, method="function_calling")
-        body: PlanOutput = chain.invoke({
+    def generate_plan(self, task: str, context: str, summary: str = "") -> PlanBody:
+        chain = _PLANNER_PROMPT | self.llm.with_structured_output(PlanBody, method="function_calling")
+        body = chain.invoke({
             "name": self.data.name,
             "role": self.data.role,
             "description": self.data.description,

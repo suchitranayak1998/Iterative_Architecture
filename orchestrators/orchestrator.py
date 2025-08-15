@@ -5,7 +5,7 @@ Iterative Orchestrator - coordinates the 3-agent workflow: Planner → Developer
 
 from langchain_core.messages import SystemMessage, HumanMessage
 from core.execution import DeveloperExecutor
-from core.planner_agent import PlannerAgent, PlanOutput
+from core.planner_agent import PlannerAgent
 from core.auditor_module import Auditor, AuditDecisionOutput
 from core.developer_module import DeveloperInteractionModule
 from core.pipeline_state import PipelineState
@@ -41,7 +41,7 @@ class IterativeOrchestrator:
         self.llm_coder = llm_coder
         self.summary = summary
         self.context = self.build_context()
-        self.planner = PlannerAgent(llm)
+        self.planner = PlannerAgent(llm_coder)
         self.auditor = Auditor(llm_coder)
         self.executor = DeveloperExecutor(df)
         self.developer_module = DeveloperInteractionModule(
@@ -196,7 +196,7 @@ class IterativeOrchestrator:
         Execute the complete iterative workflow with sequential-style subtask execution
         """
         print("\n🧭 Planning phase (single planner)...")
-        plan: PlanOutput = self.planner.generate_plan(
+        plan = self.planner.generate_plan(
             task=self.topic,
             context=self.context,
             summary=self.summary
