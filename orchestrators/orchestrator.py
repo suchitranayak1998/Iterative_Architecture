@@ -253,6 +253,7 @@ class IterativeOrchestrator:
 
             if auditor_accept < 1:
                 print("🟠 Auditor: REVISE → re-running with improved plan.")
+                print("Improved Plan:", decision.improved_plan)
                 instruction = decision.improved_plan
                 success, execution_result, plot_images, attempt_log, code = self.dev_call(subtask, instruction, code_history, prior_transforms, column_catalog, df_copy)
 
