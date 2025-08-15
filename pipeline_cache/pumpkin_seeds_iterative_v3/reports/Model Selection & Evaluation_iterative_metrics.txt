@@ -1,5 +1,0 @@
-Iterative Process: Model Selection & Evaluation took 212.45s
-Tokens — total: 47941, prompt: 36241, completion: 11700
-Estimated API cost: $0.0259
-Architecture: 3-Agent Iterative (Planner → Developer → Auditor → Developer)
-Agents: ['Alice', 'Bob', 'Carol']

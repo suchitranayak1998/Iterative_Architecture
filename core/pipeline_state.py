@@ -95,11 +95,11 @@ class PipelineState:
         """Update the current phase with subtasks"""
         self.phase_history.append({"phase": phase_name, "subtasks": subtasks})
 
-    def add_subtask_result(self, phase: str, subtask: str, summary: str, code: str, result: str, images: List[str]):
+    def add_subtask_result(self, phase: str, subtask: str, Implementation_Plan: str, code: str, result: str, images: List[str]):
         """Add a subtask result to the pipeline state"""
-        self.subtask_history.append({"phase": phase, "subtask": subtask, "code": code})
+        self.subtask_history.append({"phase": phase, "subtask": subtask, "Implementation_Plan": Implementation_Plan, "code": code})
         self.code_history.append(code)
-        self.summary_history.append({"subtask": subtask, "summary": summary})
+        self.summary_history.append({"subtask": subtask, "Implementation_Plan": Implementation_Plan})
         self.execution_log.append({"subtask": subtask, "execution_result": result})
 
     def get_all_subtasks(self):
@@ -162,7 +162,7 @@ class PipelineState:
     #########Checkpointing and Persistence#########
     ###############################################
 
-    def save_phase(self, phase_name: str, phase_results: List[Dict], personas: List = None):
+    def save_phase(self, phase_name: str, phase_results: List[Dict]):
         """Save current pipeline state after completing a phase"""
         
         phase_safe_name = phase_name.lower().replace(" ", "_").replace("&", "and").replace("(", "").replace(")", "")
@@ -180,7 +180,6 @@ class PipelineState:
             "original_hash": self.original_hash,
             "current_hash": self._get_df_hash(self.df),
             "phase_results": phase_results,
-            "personas": [p.dict() if hasattr(p, 'dict') else p for p in personas] if personas else [],
             "pipeline_state": {
                 "phase_history": self.phase_history,
                 "subtask_history": self.subtask_history,

@@ -4,15 +4,16 @@ Iterative Orchestrator - coordinates the 3-agent workflow: Planner → Developer
 """
 
 from langchain_core.messages import SystemMessage, HumanMessage
-from core.dialogue import IterativeDialogueSimulator
 from core.execution import DeveloperExecutor
-from core.agents import agent
+from core.planner_agent import PlannerAgent, PlanOutput
+from core.auditor_module import Auditor, AuditDecisionOutput
+from core.developer_module import DeveloperInteractionModule
 from core.pipeline_state import PipelineState
 import re
-from util.prompt_library import ITERATIVE_PROMPT_TEMPLATES
+from util.prompt_library import PROMPT_TEMPLATES
 from util.pipeline_config import PIPELINE_CONSTANTS as PIPELINE_CONFIG
 from util.pipeline_util import format_pipeline_config_for_prompt
-from reporting.QA import QualityAssurance
+
 from typing import List, Tuple, Dict, Any
 from reporting.validator import UnitTester, unit_test_report
 from datetime import datetime
@@ -22,7 +23,7 @@ class IterativeOrchestrator:
     Orchestrates the iterative 3-agent workflow for data science tasks
     """
     
-    def __init__(self, df, topic: str, agents, llm, llm_coder, summary: str = None, pipeline_state: PipelineState = None):
+    def __init__(self, df, topic: str, llm, llm_coder, summary: str = None, pipeline_state: PipelineState = None):
         """
         Initialize the iterative orchestrator
         
@@ -36,13 +37,18 @@ class IterativeOrchestrator:
         """
         self.df = df
         self.topic = topic
-        self.agents = agents
         self.llm = llm
         self.llm_coder = llm_coder
         self.summary = summary
         self.context = self.build_context()
-        self.simulator = IterativeDialogueSimulator(agents, self.context, llm, llm_coder, topic, summary)
+        self.planner = PlannerAgent(llm)
+        self.auditor = Auditor(llm_coder)
         self.executor = DeveloperExecutor(df)
+        self.developer_module = DeveloperInteractionModule(
+            llm_coder=self.llm_coder,
+            topic=self.topic,
+            context=self.context
+        )
         self.pipeline_state = pipeline_state or PipelineState()
         self.subtasks = []
         self.error_log = []
@@ -121,279 +127,137 @@ class IterativeOrchestrator:
         
         return self.subtasks
 
-    # def extract_code_from_response(self, response: str) -> str:
-    #     """Extract Python code from LLM response"""
-    #     return self.executor.extract_code(response)
+    def dev_call(self, subtask, instruction, code_history, prior_transforms, column_catalog, df_copy = None):
 
-    # def run(self):
-    #     """
-    #     Execute the complete iterative workflow
-    #     """
-    #     print(f"\n🎯 Iterative Task: {self.topic}")
-    #     print("🧩 Decomposing into subtasks...")
+        max_retries = 5
+        retry_count = 0 
+        clarification = ""
+        plot_images = []
+        attempt_log = []
         
-    #     # Decompose task into subtasks
-    #     self.decompose_task()
-    #     self.pipeline_state.update_phase(self.topic, self.subtasks)
-        
-    #     print("📝 Subtasks Planned:\n")
-    #     for idx, task in enumerate(self.subtasks, 1):
-    #         print(f"{idx}. {task}")
-        
-    #     code_history = "\n\n---\n\n".join(self.pipeline_state.get_recent_code_history(n=5))
-    #     code_history_list = self.pipeline_state.get_recent_code_history(n=5)
-    
-    #     if not code_history_list:
-    #         print("📝 No Code History Found")
-    #     else:
-    #         print(f"📝 Number of code snippets in history: {len(code_history_list)}")
-
-    #     # Add prior transforms context
-    #     prior_transforms = "\n".join(self.pipeline_state.get_recent_transforms())
-        
-    #     # Add column catalog context  
-    #     column_catalog = self.executor.get_column_catalog()
-
-    #     # Run the 4-step iterative process
-    #     print(f"\n🔄 Starting 4-step iterative process...")
-    #     iterative_results = self.simulator.run_iterative_process(self.subtasks)
-    #     print(iterative_results)
-
-    #     # Extract and execute final code
-    #     final_code = self.executor.extract_code(
-    #         iterative_results["final_developer_output"]["final_implementation"]
-    #     )
-        
-    #     print(f"\n💻 Executing final refined code...")
-    #     success, execution_result, plot_images = self.executor.run_code(final_code)
-
-        
-        
-    #     retry_count = 0
-    #     # Debug loop if needed
-    #     if not success:
-            
-    #         max_retries = 5
-    #         while not success and retry_count < max_retries:
-    #             print(f"⚠️ Code execution failed (attempt {retry_count + 1}). Debugging...")
-                
-    #             # ADD ERROR TO LOG
-    #             self.error_log.append({
-    #                 "task": self.topic,
-    #                 "subtask": self.topic,
-    #                 "retry": retry_count + 1,
-    #                 "traceback": execution_result,
-    #                 "code": final_code,
-    #                 "timestamp": datetime.now().isoformat()
-    #             })
-
-    #             # Use debug method from dialogue simulator
-    #             debug_response = self.simulator.debug_developer_code(
-    #                 error_message=execution_result,
-    #                 code=final_code,
-    #                 full_context=iterative_results,
-    #                 error_log=self.error_log,
-    #                 code_history=code_history,        # 🆕 ADD THIS
-    #                 prior_transforms=prior_transforms, # 🆕 ADD THIS
-    #                 column_catalog=column_catalog  
-    #             )
-                
-    #             final_code = self.executor.extract_code(debug_response)
-    #             success, execution_result, plot_images = self.executor.run_code(final_code)
-                
-    #             if success:
-    #                 print("✅ Debugging successful!")
-    #                 # Update the final output with debugged code
-    #                 iterative_results["final_developer_output"]["final_implementation"] = debug_response
-    #             else:
-    #                 retry_count += 1
-        
-    #     if success:
-    #         print("✅ Code executed successfully!")  # ADD THIS LINE
-    #         print("\n" + "="*70)
-    #         print("🖥️  EXECUTION OUTPUT:")
-    #         print("="*70)
-
-    #         if execution_result and execution_result.strip():
-    #         # Print the complete output to console
-    #             print(execution_result)
-    #         else:
-    #             print("No console output generated")
-        
-    #         print("="*70)
-        
-    #         # Show execution summary
-    #         if plot_images:
-    #             print(f"📈 Generated {len(plot_images)} visualizations")
-                
-    #         # Track DataFrame transformations
-    #         transform_lines = self.extract_df_transformations(final_code)
-    #         for line in transform_lines:
-    #             self.pipeline_state.add_transform(line)
-            
-    #         # Validate data integrity
-    #         print("🔒 Validating data integrity...")
-    #         validation_results = self.data_validator.validate_dataframe_integrity(
-    #             self.executor.df, 
-    #             self.topic
-    #         )
-            
-    #         # Store validation results
-    #         subtask_tests = []
-    #         for i, result in enumerate(validation_results, 1):
-    #             subtask_tests.append({
-    #                 "test": f"Data Integrity Test {i}",
-    #                 "status": "PASS" if result.passed else "FAIL", 
-    #                 "reason": result.message
-    #             })
-            
-    #         self.pipeline_state.add_validation_result(
-    #             subtask=self.topic,
-    #             subtask_index=1,
-    #             validation_tests=subtask_tests
-    #         )
-            
-    #         # Show validation feedback
-    #         passed = sum(1 for r in validation_results if r.passed)
-    #         total = len(validation_results)
-    #         print(f"📊 Validation: {passed}/{total} tests passed")
-            
-    #     else:
-    #         print("❌ Final code execution failed after maximum retries.")
-    #         print("📄 Final Execution Result:\n", execution_result)
-
-       
-    #     results = [{
-    #         "subtask": self.topic,
-    #         "iterative_process": iterative_results,
-    #         "planner_instructions": iterative_results["planner_output"]["planning_instructions"],
-    #         "initial_developer_code": self.executor.extract_code(
-    #             iterative_results["initial_developer_output"]["implementation"]
-    #         ),
-    #         "auditor_feedback": iterative_results["auditor_feedback"]["audit_feedback"],
-    #         "final_developer_code": final_code,
-    #         "execution_result": execution_result,
-    #         "images": plot_images,
-    #         "success": success,
-    #         "subtasks_planned": self.subtasks,      
-    #         "total_subtasks": len(self.subtasks),   
-    #         "phase_name": self.topic        
-    #     }]
-       
-    #     # Add to pipeline state
-    #     self.pipeline_state.add_subtask_result(
-    #         phase=self.topic,
-    #         subtask=self.topic,
-    #         summary=iterative_results["planner_output"]["planning_instructions"],
-    #         code=final_code,
-    #         result=execution_result,
-    #         images=plot_images
-    #     )
-
-    #     return results
-    # Replace your run() method with this version that maintains sequential paradigm
-
-    def run(self):
-        """
-        Execute the complete iterative workflow with sequential-style subtask execution
-        """
-        print(f"\n🎯 Iterative Task: {self.topic}")
-        print("🧩 Decomposing into subtasks...")
-        
-        # Decompose task into subtasks
-        self.decompose_task()
-        self.pipeline_state.update_phase(self.topic, self.subtasks)
-        results = []
-
-        print("📝 Subtasks Planned:\n")
-        for idx, task in enumerate(self.subtasks, 1):
-            print(f"{idx}. {task}")
-
-        # Get context that applies to all subtasks (like sequential)
-        code_history = "\n\n---\n\n".join(self.pipeline_state.get_recent_code_history(n=5))
-        code_history_list = self.pipeline_state.get_recent_code_history(n=5)
-        
-        if not code_history_list:
-            print("📝 No Code History Found")
-        else:
-            print(f"📝 Number of code snippets in history: {len(code_history_list)}")
-
-        prior_transforms = "\n".join(self.pipeline_state.get_recent_transforms())
-        column_catalog = self.executor.get_column_catalog()
-
-        # 🔄 4-Step Iterative Process (ONCE for entire phase)
-        print(f"\n🔄 Starting 4-step iterative process...")
-        iterative_results = self.simulator.run_iterative_process(self.subtasks)
-        print(self.subtasks)
-        # Extract final refined code from 4-step process
-        final_code = self.executor.extract_code(
-            iterative_results["final_developer_output"]["final_implementation"]
+        developer_reply = self.developer_module.generate_code(
+            subtask=subtask,
+            manager_instruction=instruction,
+            code_history=code_history,
+            prior_transforms=prior_transforms,
+            column_catalog=column_catalog
         )
-        
-        # 🆕 NOW LOOP THROUGH SUBTASKS (like sequential)
-        for idx, subtask in enumerate(self.subtasks, 1):
-            print(f"\n\n🔍 Subtask {idx}: {subtask}")
-            
-            # Use the refined code from 4-step process for this subtask
-            code = final_code
-            plot_images = []
+
+        code = self.executor.extract_code(developer_reply)
+        if df_copy is None:
             success, execution_result, plot_images = self.executor.run_code(code)
+        else:
+            success, execution_result, plot_images = self.executor.run_code(code, df_copy)
 
-            # Debugging loop (same pattern as sequential)
-            max_retries = 5
-            retry_count = 0
-            clarified = True
-            self.error_log = []  # Keep same as sequential
-            clarification = ""
-
-            if not success:
-                print(f"❌ Initial code execution failed for subtask {idx}, \n code: {code}\n")
-
-            while not success and retry_count < max_retries:
+        while not success and retry_count < max_retries:
                 print(f"⚠️ Developer code failed (attempt {retry_count + 1}). Asking Developer to debug...\n")
-                
-                # # Use same clarification pattern as sequential
-                # clarification = self.ask_for_clarification(
-                #     subtask=subtask,
-                #     error_log=self.error_log
-                # )
-                # clarification = f"# 🔍 Clarification:\n# {clarification}\n\n"
+                clarification = self.ask_for_clarification(
+                        subtask=subtask,
+                        error_log=self.error_log
+                    )
+                clarification = f"# 🔍 Clarification:\n# {clarification}\n\n" 
 
-                self.error_log.append({
+                attempt_log.append({
                     "task": self.topic,
                     "subtask": subtask,
                     "retry": retry_count,
                     "traceback": execution_result,
                     "code": code,
-                    # "clarification": clarification if clarified else ""
+                    "clarification": clarification if clarification else ""
                 })
+                
 
-                code = self.executor.extract_code(code)  # Keep same pattern
-                success, execution_result, plot_images = self.executor.run_code(code)
-
-                # Use enhanced debug method (adapted for iterative context)
-                developer_reply = self.simulator.debug_developer_code(
-                    error_message=execution_result,
+                developer_reply = self.developer_module.debug_code(
+                    subtask=subtask,
                     code=code,
-                    full_context=iterative_results,  # 🆕 Pass iterative context
-                    error_log=self.error_log,
-                    code_history=code_history,
+                    error_message=execution_result,
+                    error_log=attempt_log,
+                    manager_instruction=clarification,
+                    code_history= code_history,
                     prior_transforms=prior_transforms,
                     column_catalog=column_catalog
                 )
                 
-                # Extract debugged code
                 code = self.executor.extract_code(developer_reply)
                 success, execution_result, plot_images = self.executor.run_code(code)
 
+                
+
                 if success:
                     print("✅ Fixed Developer code executed.\n")
-                    # Update final code for remaining subtasks
-                    final_code = code
                 else:
                     retry_count += 1
+        return success, execution_result, plot_images, attempt_log, code
+
+
+    
+    def run(self):
+        """
+        Execute the complete iterative workflow with sequential-style subtask execution
+        """
+        print("\n🧭 Planning phase (single planner)...")
+        plan: PlanOutput = self.planner.generate_plan(
+            task=self.topic,
+            context=self.context,
+            summary=self.summary
+        )
+
+        print(f"📋 Planner produced {len(plan.subtasks)} subtasks.")
+        pairs: List[Tuple[str, str]] = [
+            (s.strip(), p.strip())
+            for s, p in zip(plan.subtasks or [], plan.implementation_plan or [])
+            if isinstance(p, str) and p.strip()
+        ]
+        if not pairs:
+            print("⛔ Planner produced no valid (subtask, implementation) pairs. Aborting.")
+            return {"plan": plan, "results": []}
+
+        results: List[Dict[str, Any]] = []
+        
+        self.pipeline_state.update_phase(self.topic, self.subtasks)
+        results = []
+
+        print("\n💻 Developer executing subtasks...")
+        for idx, (subtask, instruction) in enumerate(pairs, start=1):
+            print(f"{idx}. {subtask}")
             
+            auditor_accept = 0
+            # Get context that applies to all subtasks (like sequential)
+            code_history = "\n\n---\n\n".join(self.pipeline_state.get_recent_code_history(n=5))
+            code_history_list = self.pipeline_state.get_recent_code_history(n=5)
+            
+            if not code_history_list:
+                print("📝 No Code History Found")
+            else:
+                print(f"📝 Number of code snippets in history: {len(code_history_list)}")
+
+            prior_transforms = "\n".join(self.pipeline_state.get_recent_transforms())
+            column_catalog = self.executor.get_column_catalog()
+
+            print("plan:", plan)
+            instruction = plan
+
+            df_copy = self.executor.df.copy()
+
+            success, execution_result, plot_images, attempt_log, code = self.dev_call(subtask, instruction, code_history, prior_transforms, column_catalog, df_copy)
+
+            decision: AuditDecisionOutput = self.auditor.review(
+                        subtask=subtask,
+                        plan_text=instruction,
+                        execution_result=execution_result,
+                        task_phase=self.topic
+                    )
+            if decision.accept:
+                    print("🟢 Auditor: ACCEPT")
+                    auditor_accept = 1
+
+            if auditor_accept < 1:
+                print("🟠 Auditor: REVISE → re-running with improved plan.")
+                instruction = decision.improved_plan
+                success, execution_result, plot_images, attempt_log, code = self.dev_call(subtask, instruction, code_history, prior_transforms, column_catalog, df_copy)
+
             if success:
+                print(f"✅ Developer code executed successfully")
                 print("📄 Extracted Code:\n", code)
                 print("📊 Execution Result:\n", execution_result)
                 transform_lines = self.extract_df_transformations(code)
@@ -429,45 +293,32 @@ class IterativeOrchestrator:
                 if passed == total:
                     print("✅ Code executed successfully and passed all data integrity tests")
                     print(f"📊 Validation: {passed}/{total} tests passed")
-
+            
             else:
                 print("📄 Extracted Code:\n", code)
                 print("❌ Developer failed to fix the code after 5 attempts.")
                 print("📄 Final Execution Result:\n", execution_result)
 
-            # Build results (similar to sequential but with iterative context)
+            self.error_log.extend(attempt_log)
+
             results.append({
-                "subtask": subtask,
-                "conversation": [  # 🆕 Adapt iterative results to sequential format
-                    {"role": "Planner", "name": iterative_results["planner_output"]["agent"], 
-                    "message": iterative_results["planner_output"]["planning_instructions"]},
-                    {"role": "Developer (Initial)", "name": iterative_results["initial_developer_output"]["agent"],
-                    "message": iterative_results["initial_developer_output"]["implementation"]},
-                    {"role": "Auditor", "name": iterative_results["auditor_feedback"]["agent"],
-                    "message": iterative_results["auditor_feedback"]["audit_feedback"]},
-                    {"role": "Developer (Final)", "name": iterative_results["final_developer_output"]["agent"],
-                    "message": iterative_results["final_developer_output"]["final_implementation"]}
-                ],
-                "manager_instruction": iterative_results["planner_output"]["planning_instructions"],  # Map to sequential
-                "developer_reply": iterative_results["final_developer_output"]["final_implementation"],  # Final refined code
-                "code": code,
-                "execution_result": execution_result,
-                "images": plot_images
-            })
-            
-            print(subtask)
-            print(code)
-            print(execution_result)
+            "subtask": subtask,
+            "Implementation_Plan": instruction,
+            "code": code,
+            "execution_result": execution_result,
+            "images": plot_images
+        })
             self.pipeline_state.add_subtask_result(
                 phase=self.topic,
                 subtask=subtask,
-                summary=iterative_results["planner_output"]["planning_instructions"],  # Use planner instructions as summary
+                Implementation_Plan=instruction,
                 code=code,
                 result=execution_result,
                 images=plot_images
             )
 
-            # Update column catalog for next subtask (DataFrame might have changed)
-            column_catalog = self.executor.get_column_catalog()
 
-        return results
+        return {
+            "plan": plan,
+            "results": results
+        }

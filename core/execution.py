@@ -51,7 +51,10 @@ class DeveloperExecutor:
         match = re.search(r"```python(.*?)```", text, re.DOTALL)
         return match.group(1).strip() if match else ""
 
-    def run_code(self, code: str):
+    def run_code(self, code: str, df_copy: pd.DataFrame = None):
+        if df_copy is not None:
+            self.df = df_copy
+
         local_env = {'df': self.df, 'pd': pd, 'plt': plt, 'os': os, 'sns': sns, 'np': np}
 
         output_buffer = io.StringIO()
