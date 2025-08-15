@@ -1,0 +1,116 @@
+```html
+<h1>Iterative Exploratory Data Analysis (EDA) Summary</h1>
+
+<h2>1. Strategic Insights</h2>
+<ul>
+  <li>The primary objective was to gain a deep understanding of dataset features, their distributions, relationships, and quality issues to guide feature engineering and modeling with a RandomForestClassifier.</li>
+  <li>Key planning decisions included:
+    <ul>
+      <li>Comprehensive descriptive statistics and distribution analysis to detect skewness, kurtosis, and outliers.</li>
+      <li>Visualization of class distribution to assess balance and potential bias.</li>
+      <li>Correlation and multicollinearity analysis to identify highly correlated features.</li>
+      <li>Feature-target relationship exploration via boxplots and violin plots.</li>
+      <li>Robust handling of missing data and reproducibility through consistent random seed.</li>
+      <li>Saving all plots and reports systematically for transparency and reproducibility.</li>
+    </ul>
+  </li>
+  <li>Success criteria focused on completeness, clarity, and actionable insights to inform subsequent modeling steps.</li>
+</ul>
+
+<h2>2. Implementation Quality</h2>
+<ul>
+  <li>The initial implementation closely followed the strategic plan, covering all major EDA components with clear, modular Python code.</li>
+  <li>Robust error handling was incorporated to ensure plot generation resilience.</li>
+  <li>Visualizations included histograms with KDE, boxplots, violin plots, pairplots, and heatmaps, all saved with consistent naming conventions.</li>
+  <li>Statistical measures such as skewness, kurtosis, z-scores, and IQR were computed to quantify data characteristics and outliers.</li>
+  <li>Code was logically structured with clear separation of analysis steps and informative print statements.</li>
+  <li>However, some areas lacked explicit handling or deeper analysis, such as class imbalance severity, missing data treatment, and nonlinear feature interactions.</li>
+</ul>
+
+<h2>3. Audit Findings</h2>
+<ul>
+  <li><strong>Strengths:</strong>
+    <ul>
+      <li>Comprehensive coverage of planned EDA tasks.</li>
+      <li>Effective use of visual and statistical tools for data understanding.</li>
+      <li>Good code readability and maintainability.</li>
+    </ul>
+  </li>
+  <li><strong>Improvement Areas:</strong>
+    <ul>
+      <li>Class imbalance analysis was limited to ratio reporting without deeper metrics or visualizations.</li>
+      <li>Missing data was only checked but not explicitly handled or reported beyond initial detection.</li>
+      <li>Feature importance and nonlinear relationships were not explored beyond pairplots.</li>
+      <li>Outlier reporting lacked structured summaries for easier interpretation.</li>
+      <li>Logging and reporting could be more detailed and structured for stakeholder communication.</li>
+      <li>Modularity could be improved by encapsulating repeated plotting code into functions.</li>
+      <li>Categorical variable analysis was minimal and not dynamic for future schema changes.</li>
+    </ul>
+  </li>
+  <li><strong>Priority Recommendations:</strong>
+    <ol>
+      <li>Enhance class imbalance assessment with quantitative metrics and complementary visualizations.</li>
+      <li>Implement explicit missing data handling strategies with documentation.</li>
+      <li>Provide structured summaries for outliers and correlations.</li>
+      <li>Expand feature interaction analysis to include nonlinearities and feature importance.</li>
+      <li>Improve modularity and logging for maintainability and clarity.</li>
+    </ol>
+  </li>
+</ul>
+
+<h2>4. Final Outcomes</h2>
+<ul>
+  <li>Refined implementation addressed audit feedback by:
+    <ul>
+      <li>Adding class imbalance metrics (dominant class ratio, minority-majority ratio, Gini coefficient) and pie chart visualization.</li>
+      <li>Explicitly checking and reporting missing data, with placeholders for imputation/removal if needed.</li>
+      <li>Generating structured CSV reports for descriptive statistics, distribution stats, outlier summaries, highly correlated feature pairs, and feature importances.</li>
+      <li>Enhancing correlation analysis with threshold annotations and Spearman correlation heatmap for nonlinear monotonic relationships.</li>
+      <li>Estimating feature importance using RandomForestClassifier to guide feature selection and interpretation.</li>
+      <li>Modularizing plotting functions for clarity and reuse.</li>
+      <li>Extending categorical variable analysis dynamically to accommodate future dataset changes.</li>
+      <li>Maintaining robust error handling and consistent output management.</li>
+    </ul>
+  </li>
+  <li>Execution outputs confirmed no missing data, balanced classes (approx. 52% vs 48%), moderate skewness in features, presence of some outliers, and identification of important features influencing the target.</li>
+  <li>All plots and reports were saved in a dedicated directory (<code>eda_plots/</code>) for easy access and review.</li>
+</ul>
+
+<h2>5. Process Effectiveness</h2>
+<ul>
+  <li>The iterative workflow effectively improved the EDA quality by incorporating audit feedback into a refined, more comprehensive analysis.</li>
+  <li>Modularization and structured reporting enhanced maintainability and stakeholder communication.</li>
+  <li>Explicit handling of class imbalance and missing data improved data quality assessment rigor.</li>
+  <li>Feature importance and nonlinear correlation analyses added valuable insights beyond initial exploratory steps.</li>
+  <li>The process demonstrated strong collaboration between planning, implementation, auditing, and refinement roles, resulting in a robust EDA foundation for subsequent modeling.</li>
+</ul>
+
+<h2>6. Technical Outputs</h2>
+<ul>
+  <li><strong>Descriptive Statistics:</strong> Summary CSV with count, mean, std, min, max, quartiles for numerical features.</li>
+  <li><strong>Distribution Visualizations:</strong> Histograms with KDE for all numerical features, annotated with skewness and kurtosis.</li>
+  <li><strong>Class Distribution:</strong> Bar chart and pie chart showing class counts and proportions.</li>
+  <li><strong>Correlation Analysis:</strong>
+    <ul>
+      <li>Pearson and Spearman correlation heatmaps with threshold highlights.</li>
+      <li>CSV report of highly correlated feature pairs (|corr| > 0.9) with warnings on multicollinearity.</li>
+    </ul>
+  </li>
+  <li><strong>Feature Importance:</strong> RandomForestClassifier feature importance CSV and ranked list.</li>
+  <li><strong>Pairplots:</strong> Visualizing relationships among top features by variance and importance, colored by class.</li>
+  <li><strong>Outlier Detection:</strong> Boxplots per feature and CSV summary of outlier counts via Z-score and IQR methods.</li>
+  <li><strong>Feature-Target Relationships:</strong> Boxplots and violin plots grouped by class for each numerical feature.</li>
+  <li><strong>Categorical Analysis:</strong> Dynamic countplots and contingency tables for categorical variables (currently only 'Class').</li>
+</ul>
+
+<h2>7. Next Phase Recommendations</h2>
+<ul>
+  <li><strong>Feature Engineering:</strong> Use insights on skewness, outliers, and multicollinearity to engineer or transform features (e.g., log transforms, removal of redundant features).</li>
+  <li><strong>Address Class Imbalance:</strong> Although classes are relatively balanced, monitor model performance and consider resampling or class weighting if imbalance effects emerge.</li>
+  <li><strong>Missing Data Strategy:</strong> Continue monitoring for missing data in future datasets; implement imputation or removal as needed.</li>
+  <li><strong>Modeling Preparation:</strong> Leverage feature importance and nonlinear relationship insights to select features and tune models.</li>
+  <li><strong>Advanced Analysis:</strong> Consider partial dependence plots, SHAP values, or other interpretability methods in modeling phase to deepen understanding of feature effects.</li>
+  <li><strong>Automation & Reporting:</strong> Develop automated EDA reporting pipelines (e.g., HTML or markdown reports) to streamline stakeholder communication.</li>
+  <li><strong>Expand Categorical Analysis:</strong> Prepare for additional categorical variables by enhancing dynamic analysis functions.</li>
+</ul>
+```

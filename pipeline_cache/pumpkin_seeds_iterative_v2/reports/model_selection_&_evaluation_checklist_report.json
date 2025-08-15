@@ -1,0 +1,10 @@
+{
+  "Split data into train/validation/test sets": "Fully Addressed",
+  "Train multiple model candidates": "Partially Addressed",
+  "Tune hyperparameters systematically": "Fully Addressed",
+  "Evaluate using appropriate metrics": "Fully Addressed",
+  "Perform cross-validation if needed": "Fully Addressed",
+  "Compare model performance objectively": "Fully Addressed",
+  "Interpret and validate model outputs": "Fully Addressed",
+  "Document final model selection rationale": "Fully Addressed"
+}

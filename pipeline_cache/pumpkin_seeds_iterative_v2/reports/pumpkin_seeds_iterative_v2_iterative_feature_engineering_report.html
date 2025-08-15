@@ -1,0 +1,1165 @@
+<html><head><title>Feature Engineering Report</title></head><body><h1>🔄 Iterative Analysis Report: Feature Engineering</h1>
+<h2>🎯 Process Overview</h2>
+<p>This report shows the complete 4-step iterative process:
+1. <strong>Planner</strong>: Strategic planning and task decomposition
+2. <strong>Developer</strong>: Initial implementation
+3. <strong>Auditor</strong>: Review and feedback
+4. <strong>Developer</strong>: Refined implementation</p>
+<h2>🔧 Phase: Feature Engineering</h2>
+<h3>📋 Planned Subtasks</h3>
+<ol>
+<li>Analyze and select relevant features for transformation, including addressing multicollinearity and feature importance insights</li>
+<li>Develop and implement missing data imputation strategies, including median/mode filling and outlier flagging, ensuring robustness across features</li>
+<li>Engineer skewed features by applying log1p transformations with shifting where needed, and create ratio and interaction features such as Major_to_Minor_Axis_Ratio and Area_Solidity_Interaction</li>
+<li>Encode categorical variables (e.g., Class) and generate additional features based on domain insights or statistical significance, prioritizing those enhancing model performance</li>
+<li>Conduct feature relevance validation by assessing correlation, importance scores, and statistical tests, and prepare features for selection or dimensionality reduction</li>
+<li>Document all transformations, flags, and new features, and prepare validation plots and summaries for audit review</li>
+<li>Refine feature set iteratively based on audit feedback, focusing on removing redundant or non-informative features, and re-evaluate their impact on model metrics</li>
+</ol>
+<h3>📋 Step 1: Alex (Strategic Planning)</h3>
+<p><strong>Role:</strong> Planner</p>
+<h1>Implementation Instructions for Feature Engineering Phase</h1>
+<hr />
+<h2><strong>Strategic Overview</strong></h2>
+<h3><strong>Objective &amp; Rationale</strong></h3>
+<p>The goal of this phase is to enhance the dataset's predictive power and robustness by performing targeted feature engineering. This involves selecting relevant features, handling data quality issues (missing values, outliers), transforming skewed features, creating new informative features, and validating their relevance. Well-engineered features are critical for optimizing the performance of the subsequent RandomForestClassifier model and ensuring interpretability.</p>
+<h3><strong>Key Considerations</strong></h3>
+<ul>
+<li>Address multicollinearity to prevent redundant information.</li>
+<li>Handle missing data systematically, using median/mode imputation.</li>
+<li>Detect and flag outliers explicitly, facilitating their treatment.</li>
+<li>Transform skewed features with appropriate shifts before log transformations.</li>
+<li>Engineer ratio and interaction features based on domain insights.</li>
+<li>Encode categorical variables consistently.</li>
+<li>Validate feature relevance via correlation, importance scores, and statistical tests.</li>
+<li>Maintain clear documentation of all transformations, flags, and new features.</li>
+<li>Prepare visualization outputs for audit and interpretability.</li>
+</ul>
+<h3><strong>Success Criteria</strong></h3>
+<ul>
+<li>All relevant missing data imputed correctly.</li>
+<li>Outliers flagged explicitly with boolean columns.</li>
+<li>Skewed features transformed appropriately, with visual confirmation.</li>
+<li>New features (ratios, interactions) created and documented.</li>
+<li>Features validated through correlation analysis, importance scores, and statistical significance.</li>
+<li>DataFrame updated with consistent naming conventions and stored in expected formats.</li>
+<li>Visualizations generated and saved for review.</li>
+<li>Robust error handling implemented to prevent pipeline failures.</li>
+</ul>
+<hr />
+<h2><strong>Detailed Implementation Plan</strong></h2>
+<h3>1. <strong>Feature Selection and Multicollinearity Analysis</strong></h3>
+<ul>
+<li><strong>Objective:</strong> Identify highly correlated features to consider removing or combining.</li>
+<li><strong>Approach:</strong></li>
+<li>Compute Pearson correlation matrix (<code>pandas.DataFrame.corr()</code>).</li>
+<li>Generate a heatmap visualization (<code>seaborn.heatmap()</code>) to identify pairs with |corr| &gt; 0.8.</li>
+<li>For highly correlated pairs, decide on removal or combination based on domain knowledge.</li>
+<li>Save correlation matrix as <code>correlation_matrix.csv</code>.</li>
+<li><strong>Output:</strong> List of features to consider dropping or combining.</li>
+</ul>
+<hr />
+<h3>2. <strong>Missing Data Imputation &amp; Data Quality Checks</strong></h3>
+<ul>
+<li><strong>Objective:</strong> Fill missing values to ensure model robustness.</li>
+<li><strong>Approach:</strong></li>
+<li>Check for missing values with <code>DataFrame.isnull().sum()</code>.</li>
+<li>For numerical features:<ul>
+<li>Use median imputation (<code>sklearn.impute.SimpleImputer(strategy='median')</code>).</li>
+</ul>
+</li>
+<li>For categorical features (if any):<ul>
+<li>Use mode imputation (<code>strategy='most_frequent'</code>).</li>
+</ul>
+</li>
+<li>Log imputation actions for transparency.</li>
+<li><strong>Data Quality Checks:</strong></li>
+<li>Confirm no missing values remain post-imputation.</li>
+<li>Save a summary report (<code>missing_data_report.csv</code>).</li>
+<li><strong>Output:</strong> Updated DataFrame with imputed values.</li>
+</ul>
+<hr />
+<h3>3. <strong>Outlier Detection and Flagging</strong></h3>
+<ul>
+<li><strong>Objective:</strong> Explicitly flag outliers for potential use in modeling or cleaning.</li>
+<li><strong>Approach:</strong></li>
+<li>Use IQR method:<ul>
+<li>Compute Q1 and Q3 for each feature.</li>
+<li>Calculate IQR = Q3 - Q1.</li>
+<li>Flag as outliers if value &lt; Q1 - 1.5<em>IQR or &gt; Q3 + 1.5</em>IQR.</li>
+<li>Create boolean columns named <code>[feature]_outlier_flag</code>.</li>
+</ul>
+</li>
+<li>Use Z-score method:<ul>
+<li>Calculate Z-scores (<code>scipy.stats.zscore()</code>).</li>
+<li>Flag as outliers if |Z| &gt; 3.</li>
+</ul>
+</li>
+<li>Store counts of outliers per feature.</li>
+<li>Generate boxplots (<code>seaborn.boxplot()</code>) with outliers highlighted.</li>
+<li><strong>Output:</strong> Outlier flags added to DataFrame, visualizations saved.</li>
+</ul>
+<hr />
+<h3>4. <strong>Transform Skewed Features</strong></h3>
+<ul>
+<li><strong>Objective:</strong> Address skewness to improve model performance.</li>
+<li><strong>Approach:</strong></li>
+<li>For each feature identified as skewed (via skewness statistic <code>scipy.stats.skew()</code>):<ul>
+<li>If minimum value &gt; 0:</li>
+<li>Apply <code>np.log1p()</code> directly.</li>
+<li>If minimum value ≤ 0:</li>
+<li>Shift data by subtracting min value + small epsilon (e.g., 1e-6), then apply <code>np.log1p()</code>.</li>
+</ul>
+</li>
+<li>Save transformed features as <code>[feature]_log1p</code>.</li>
+<li>Generate histograms with KDE overlay before and after transformation for validation.</li>
+<li><strong>Output:</strong> Log-transformed features added to DataFrame, visualizations saved.</li>
+</ul>
+<hr />
+<h3>5. <strong>Create Ratio and Interaction Features</strong></h3>
+<ul>
+<li><strong>Objective:</strong> Engineer features capturing domain relationships.</li>
+<li><strong>Approach:</strong></li>
+<li><strong>Major_to_Minor_Axis_Ratio:</strong><ul>
+<li>Calculate as <code>Major_Axis_Length / Minor_Axis_Length</code>.</li>
+<li>Handle division by zero or near-zero by replacing zeros with a small epsilon.</li>
+</ul>
+</li>
+<li><strong>Area_Solidity_Interaction:</strong><ul>
+<li>Calculate as <code>Area * Solidity</code>.</li>
+</ul>
+</li>
+<li>Save these features with clear, descriptive names.</li>
+<li>Generate scatter plots or pairplots to visualize relationships.</li>
+<li><strong>Output:</strong> New features added, visualizations saved.</li>
+</ul>
+<hr />
+<h3>6. <strong>Categorical Encoding</strong></h3>
+<ul>
+<li><strong>Objective:</strong> Convert categorical variables into numerical format.</li>
+<li><strong>Approach:</strong></li>
+<li>Encode <code>Class</code>:<ul>
+<li>Use <code>sklearn.preprocessing.LabelEncoder()</code>.</li>
+<li>Save <code>Class_encoded</code>.</li>
+</ul>
+</li>
+<li>Document encoding method and mapping.</li>
+<li><strong>Output:</strong> Encoded categorical variables.</li>
+</ul>
+<hr />
+<h3>7. <strong>Feature Validation &amp; Selection</strong></h3>
+<ul>
+<li><strong>Correlation Analysis:</strong></li>
+<li>Reassess correlation matrix post feature engineering.</li>
+<li>Identify redundant features.</li>
+<li><strong>Feature Importance:</strong></li>
+<li>Train a preliminary RandomForest on current features.</li>
+<li>Plot feature importance (<code>matplotlib</code>/<code>seaborn</code>) and save as <code>feature_importance_rf.png</code>.</li>
+<li><strong>Statistical Tests:</strong></li>
+<li>Perform ANOVA (<code>scipy.stats.f_oneway()</code>) for each feature across classes.</li>
+<li>Save results as <code>anova_results.csv</code>.</li>
+<li>Visualize significance levels in <code>anova_significance.png</code>.</li>
+<li><strong>Outcome:</strong> Prioritized feature list for model input.</li>
+</ul>
+<hr />
+<h3>8. <strong>Documentation &amp; Final Checks</strong></h3>
+<ul>
+<li><strong>Transformations &amp; Flags:</strong></li>
+<li>Record all feature engineering steps, including formulas and reasons.</li>
+<li>Maintain a log of outlier flags and imputation methods.</li>
+<li><strong>Validation Plots:</strong></li>
+<li>Save all histograms, boxplots, pairplots, importance plots, and statistical significance charts.</li>
+<li><strong>Quality Assurance:</strong></li>
+<li>Confirm no missing data remains.</li>
+<li>Verify new features and flags are correctly added.</li>
+<li>Ensure naming conventions are consistent (<code>snake_case</code>).</li>
+</ul>
+<hr />
+<h2><strong>Technical Requirements</strong></h2>
+<ul>
+<li><strong>DataFrame:</strong></li>
+<li>Input: Original dataset.</li>
+<li>Output: Updated dataset with new features, flags, and encoded variables.</li>
+<li><strong>Variable Naming:</strong></li>
+<li>Use lowercase with underscores, e.g., <code>area_outlier_flag</code>.</li>
+<li>For transformed features: <code>[original_feature]_log1p</code>.</li>
+<li>For ratios/interactions: descriptive names like <code>major_to_minor_axis_ratio</code>.</li>
+<li><strong>Outputs:</strong></li>
+<li>Save all visualizations as PNG files in <code>eda_outputs/</code>.</li>
+<li>Save CSV summaries (<code>correlation_matrix.csv</code>, <code>missing_data_report.csv</code>, <code>anova_results.csv</code>, etc.).</li>
+<li><strong>Error Handling:</strong></li>
+<li>Wrap key steps in try-except blocks.</li>
+<li>Log errors with descriptive messages.</li>
+<li>Ensure pipeline continues or fails gracefully with informative output.</li>
+</ul>
+<hr />
+<h2><strong>Summary of Key Steps</strong></h2>
+<ol>
+<li>Analyze feature correlations; identify multicollinearity.</li>
+<li>Impute missing values systematically.</li>
+<li>Detect and flag outliers using IQR and Z-score methods.</li>
+<li>Transform skewed features with shifting and log1p.</li>
+<li>Engineer ratio and interaction features.</li>
+<li>Encode categorical variables.</li>
+<li>Validate features via correlation, importance, and ANOVA.</li>
+<li>Document all steps, save visualizations, and prepare dataset for modeling.</li>
+</ol>
+<hr />
+<p>Please implement these instructions carefully, ensuring clarity, reproducibility, and robustness at each step.</p>
+<h3>💻 Step 2: Jamie (Initial Implementation)</h3>
+<p><strong>Role:</strong> Developer</p>
+<p><strong>Initial Code:</strong></p>
+<pre><code class="language-python"># Necessary imports
+import numpy as np
+import pandas as pd
+import seaborn as sns
+import matplotlib.pyplot as plt
+from sklearn.impute import SimpleImputer
+from sklearn.preprocessing import LabelEncoder
+from sklearn.ensemble import RandomForestClassifier
+from scipy.stats import skew, zscore, f_oneway
+import warnings
+
+warnings.filterwarnings('ignore')  # Suppress warnings for clean output
+
+# Assume df is already loaded in the environment
+
+print(f&quot;Initial df.shape: {df.shape}&quot;)
+
+try:
+    # 1. Feature Selection and Multicollinearity Analysis
+    print(&quot;\nStep 1: Feature Selection and Multicollinearity Analysis&quot;)
+    numeric_features = df.select_dtypes(include=[np.number]).columns.tolist()
+    # Exclude outlier flag columns from correlation analysis (boolean)
+    numeric_features = [f for f in numeric_features if not f.endswith('_outlier_flag')]
+    corr_matrix = df[numeric_features].corr(method='pearson')
+
+    # Identify pairs with |corr| &gt; 0.8 (excluding self-correlation)
+    high_corr_pairs = []
+    for i in range(len(corr_matrix.columns)):
+        for j in range(i+1, len(corr_matrix.columns)):
+            f1 = corr_matrix.columns[i]
+            f2 = corr_matrix.columns[j]
+            corr_val = corr_matrix.iloc[i, j]
+            if abs(corr_val) &gt; 0.8:
+                high_corr_pairs.append((f1, f2, corr_val))
+
+    print(f&quot;Number of highly correlated pairs (|corr|&gt;0.8): {len(high_corr_pairs)}&quot;)
+    if high_corr_pairs:
+        print(&quot;Highly correlated feature pairs (feature1, feature2, corr):&quot;)
+        for pair in high_corr_pairs:
+            print(pair)
+
+    # Plot heatmap (not shown or saved externally)
+    plt.figure(figsize=(12, 10))
+    sns.heatmap(corr_matrix, annot=False, cmap='coolwarm', center=0)
+    plt.title('Correlation Matrix Heatmap')
+    plt.close()
+
+    # 2. Missing Data Imputation &amp; Data Quality Checks
+    print(&quot;\nStep 2: Missing Data Imputation &amp; Data Quality Checks&quot;)
+    missing_before = df.isnull().sum()
+    print(&quot;Missing values before imputation (non-zero only):&quot;)
+    print(missing_before[missing_before &gt; 0])
+
+    # Separate numerical and categorical features
+    cat_features = df.select_dtypes(include=['object', 'category']).columns.tolist()
+    num_features = df.select_dtypes(include=[np.number]).columns.tolist()
+
+    # Impute numerical features with median
+    try:
+        num_imputer = SimpleImputer(strategy='median')
+        df[num_features] = num_imputer.fit_transform(df[num_features])
+        print(&quot;Numerical features median imputed where missing.&quot;)
+    except Exception as e:
+        print(f&quot;Error during numerical imputation: {e}&quot;)
+
+    # Impute categorical features with mode
+    try:
+        for col in cat_features:
+            if df[col].isnull().sum() &gt; 0:
+                mode_val = df[col].mode(dropna=True)
+                if not mode_val.empty:
+                    df[col].fillna(mode_val[0], inplace=True)
+                    print(f&quot;Categorical feature '{col}' mode imputed.&quot;)
+                else:
+                    print(f&quot;Categorical feature '{col}' has no mode to impute.&quot;)
+    except Exception as e:
+        print(f&quot;Error during categorical imputation: {e}&quot;)
+
+    missing_after = df.isnull().sum()
+    print(&quot;Missing values after imputation (should be zero):&quot;)
+    print(missing_after[missing_after &gt; 0])
+
+    # 3. Outlier Detection and Flagging
+    print(&quot;\nStep 3: Outlier Detection and Flagging&quot;)
+    # Use IQR method and Z-score method for numeric features (excluding existing outlier flags)
+    outlier_counts = {}
+    epsilon = 1e-9  # small number to avoid division by zero
+
+    for feature in num_features:
+        if feature.endswith('_outlier_flag'):
+            continue  # skip existing flags
+
+        try:
+            Q1 = df[feature].quantile(0.25)
+            Q3 = df[feature].quantile(0.75)
+            IQR = Q3 - Q1
+            lower_bound = Q1 - 1.5 * IQR
+            upper_bound = Q3 + 1.5 * IQR
+
+            # IQR outlier flag
+            iqr_flag_col = f&quot;{feature.lower()}_outlier_flag_iqr&quot;
+            df[iqr_flag_col] = (df[feature] &lt; lower_bound) | (df[feature] &gt; upper_bound)
+
+            # Z-score outlier flag
+            z_scores = zscore(df[feature])
+            z_flag_col = f&quot;{feature.lower()}_outlier_flag_zscore&quot;
+            df[z_flag_col] = np.abs(z_scores) &gt; 3
+
+            # Combine flags (logical OR)
+            combined_flag_col = f&quot;{feature.lower()}_outlier_flag&quot;
+            df[combined_flag_col] = df[iqr_flag_col] | df[z_flag_col]
+
+            # Count outliers
+            outlier_counts[feature] = df[combined_flag_col].sum()
+
+            # Boxplot with outliers highlighted (not shown or saved)
+            plt.figure(figsize=(6, 4))
+            sns.boxplot(x=df[feature])
+            plt.title(f'Boxplot of {feature} with outliers flagged')
+            plt.close()
+
+        except Exception as e:
+            print(f&quot;Error processing outliers for feature '{feature}': {e}&quot;)
+
+    print(&quot;Outlier counts per feature (combined IQR and Z-score flags):&quot;)
+    for feat, count in outlier_counts.items():
+        print(f&quot;{feat}: {count}&quot;)
+
+    # 4. Transform Skewed Features
+    print(&quot;\nStep 4: Transform Skewed Features&quot;)
+    skew_threshold = 0.5  # threshold to consider skewed
+    skewed_features = []
+    for feature in num_features:
+        if feature.endswith('_outlier_flag') or feature.endswith('_encoded'):
+            continue
+        try:
+            skewness = skew(df[feature])
+            if abs(skewness) &gt; skew_threshold:
+                skewed_features.append(feature)
+        except Exception as e:
+            print(f&quot;Error calculating skewness for '{feature}': {e}&quot;)
+
+    print(f&quot;Features identified as skewed (|skew| &gt; {skew_threshold}): {skewed_features}&quot;)
+
+    for feature in skewed_features:
+        try:
+            min_val = df[feature].min()
+            shift = 0
+            if min_val &lt;= 0:
+                shift = abs(min_val) + 1e-6
+            transformed_col = f&quot;{feature.lower()}_log1p&quot;
+            df[transformed_col] = np.log1p(df[feature] + shift)
+
+            # Plot before and after histograms with KDE (not shown or saved)
+            plt.figure(figsize=(12, 4))
+            plt.subplot(1, 2, 1)
+            sns.histplot(df[feature], kde=True)
+            plt.title(f'Original distribution of {feature}')
+            plt.subplot(1, 2, 2)
+            sns.histplot(df[transformed_col], kde=True, color='orange')
+            plt.title(f'Log1p transformed distribution of {feature}')
+            plt.tight_layout()
+            plt.close()
+
+        except Exception as e:
+            print(f&quot;Error transforming feature '{feature}': {e}&quot;)
+
+    # 5. Create Ratio and Interaction Features
+    print(&quot;\nStep 5: Create Ratio and Interaction Features&quot;)
+
+    # Major_to_Minor_Axis_Ratio
+    try:
+        eps = 1e-6
+        minor_axis = df['Minor_Axis_Length'].replace(0, eps)
+        df['major_to_minor_axis_ratio'] = df['Major_Axis_Length'] / minor_axis
+        print(&quot;Created feature 'major_to_minor_axis_ratio'.&quot;)
+    except Exception as e:
+        print(f&quot;Error creating 'major_to_minor_axis_ratio': {e}&quot;)
+
+    # Area_Solidity_Interaction
+    try:
+        df['area_solidity_interaction'] = df['Area'] * df['Solidity']
+        print(&quot;Created feature 'area_solidity_interaction'.&quot;)
+    except Exception as e:
+        print(f&quot;Error creating 'area_solidity_interaction': {e}&quot;)
+
+    # Scatter plots for new features vs target class (not shown or saved)
+    try:
+        plt.figure(figsize=(6, 4))
+        sns.scatterplot(x='major_to_minor_axis_ratio', y='area_solidity_interaction', hue='Class', data=df, alpha=0.6)
+        plt.title('Scatter plot of major_to_minor_axis_ratio vs area_solidity_interaction by Class')
+        plt.close()
+    except Exception as e:
+        print(f&quot;Error creating scatter plot for new features: {e}&quot;)
+
+    # 6. Categorical Encoding
+    print(&quot;\nStep 6: Categorical Encoding&quot;)
+    try:
+        if 'Class' in df.columns:
+            le = LabelEncoder()
+            df['class_encoded'] = le.fit_transform(df['Class'])
+            print(&quot;Encoded 'Class' into 'class_encoded'. Mapping:&quot;)
+            mapping = dict(zip(le.classes_, le.transform(le.classes_)))
+            print(mapping)
+        else:
+            print(&quot;Column 'Class' not found for encoding.&quot;)
+    except Exception as e:
+        print(f&quot;Error encoding 'Class': {e}&quot;)
+
+    # 7. Feature Validation &amp; Selection
+    print(&quot;\nStep 7: Feature Validation &amp; Selection&quot;)
+
+    # Recalculate correlation matrix including new features (excluding outlier flags)
+    try:
+        features_for_corr = [col for col in df.select_dtypes(include=[np.number]).columns if not col.endswith('_outlier_flag') and not col.endswith('_outlier_flag_iqr') and not col.endswith('_outlier_flag_zscore')]
+        corr_matrix_post = df[features_for_corr].corr()
+        # Plot heatmap (not shown or saved)
+        plt.figure(figsize=(12, 10))
+        sns.heatmap(corr_matrix_post, cmap='coolwarm', center=0)
+        plt.title('Post-Feature Engineering Correlation Matrix')
+        plt.close()
+        print(&quot;Recalculated correlation matrix after feature engineering.&quot;)
+    except Exception as e:
+        print(f&quot;Error recalculating correlation matrix: {e}&quot;)
+
+    # Feature importance with RandomForestClassifier
+    try:
+        # Prepare data for RF
+        X = df[features_for_corr].drop(columns=['class_encoded'], errors='ignore')
+        y = df['class_encoded']
+        rf = RandomForestClassifier(random_state=42, n_jobs=-1)
+        rf.fit(X, y)
+        importances = pd.Series(rf.feature_importances_, index=X.columns).sort_values(ascending=False)
+
+        # Plot feature importance (not shown or saved)
+        plt.figure(figsize=(10, 6))
+        sns.barplot(x=importances.values, y=importances.index, palette='viridis')
+        plt.title('Random Forest Feature Importances')
+        plt.xlabel('Importance')
+        plt.ylabel('Feature')
+        plt.tight_layout()
+        plt.close()
+
+        print(&quot;Top 10 features by Random Forest importance:&quot;)
+        print(importances.head(10))
+    except Exception as e:
+        print(f&quot;Error computing feature importance: {e}&quot;)
+
+    # ANOVA tests for each numeric feature across classes
+    print(&quot;\nPerforming ANOVA tests for numeric features across classes...&quot;)
+    try:
+        anova_results = []
+        classes = df['class_encoded'].unique()
+        for feature in features_for_corr:
+            groups = [df[df['class_encoded'] == cls][feature].values for cls in classes]
+            f_stat, p_val = f_oneway(*groups)
+            anova_results.append({'feature': feature, 'f_stat': f_stat, 'p_value': p_val})
+
+        anova_df = pd.DataFrame(anova_results).sort_values('p_value')
+        print(&quot;Top 10 features by ANOVA significance (lowest p-values):&quot;)
+        print(anova_df.head(10))
+
+        # Plot -log10(p_value) for significance (not shown or saved)
+        plt.figure(figsize=(12, 6))
+        sns.barplot(x='feature', y=-np.log10(anova_df['p_value']), data=anova_df)
+        plt.xticks(rotation=90)
+        plt.title('ANOVA Significance (-log10 p-value) per Feature')
+        plt.ylabel('-log10(p-value)')
+        plt.tight_layout()
+        plt.close()
+    except Exception as e:
+        print(f&quot;Error performing ANOVA tests: {e}&quot;)
+
+    # 8. Documentation &amp; Final Checks
+    print(&quot;\nStep 8: Documentation &amp; Final Checks&quot;)
+    try:
+        # Confirm no missing data remains
+        missing_final = df.isnull().sum()
+        if missing_final.sum() == 0:
+            print(&quot;No missing data remains after all imputations.&quot;)
+        else:
+            print(&quot;Warning: Missing data remains in columns:&quot;)
+            print(missing_final[missing_final &gt; 0])
+
+        # Confirm new features and flags added
+        new_cols = [col for col in df.columns if col not in numeric_features + cat_features]
+        print(f&quot;New columns added: {new_cols}&quot;)
+
+        # Check naming conventions (snake_case)
+        non_snake_case = [col for col in df.columns if not col.islower() or ' ' in col or '-' in col]
+        if non_snake_case:
+            print(&quot;Warning: Some columns do not follow snake_case naming:&quot;)
+            print(non_snake_case)
+        else:
+            print(&quot;All columns follow snake_case naming conventions.&quot;)
+
+    except Exception as e:
+        print(f&quot;Error during final checks: {e}&quot;)
+
+except Exception as e:
+    print(f&quot;Unexpected error in feature engineering pipeline: {e}&quot;)
+
+print(f&quot;\nFinal df.shape: {df.shape}&quot;)
+</code></pre>
+<h3>🔍 Step 3: Taylor (Quality Review)</h3>
+<p><strong>Role:</strong> Auditor</p>
+<p><strong>Overall Assessment:</strong><br />
+The implementation aligns well with the Planner’s instructions, covering all key aspects of feature engineering such as correlation analysis, missing value imputation, outlier detection and flagging, skewness transformation, feature creation, encoding, and validation. The code is generally clear, methodical, and employs appropriate libraries and techniques. It also includes robust error handling and informative print statements, which support reproducibility and debugging. However, there are some areas where improvements can enhance correctness, efficiency, and adherence to specifications.</p>
+<hr />
+<p><strong>What's Working Well:</strong><br />
+- <strong>Comprehensive coverage:</strong> All steps from the planner are addressed systematically, including correlation analysis, imputation, outlier flagging, transformations, feature creation, encoding, and validation.<br />
+- <strong>Use of standard libraries:</strong> Proper use of pandas, seaborn, sklearn, scipy, and numpy for their respective tasks.<br />
+- <strong>Error handling:</strong> Try-except blocks ensure that individual failures do not halt the entire pipeline, and informative messages are printed.<br />
+- <strong>Documentation of steps:</strong> The code comments and print statements clarify each step, aiding transparency.<br />
+- <strong>Visualizations:</strong> Plots are generated for outlier detection, skewness, feature importance, and statistical significance, supporting interpretability.</p>
+<hr />
+<p><strong>Issues Identified:</strong>  </p>
+<ol>
+<li><strong>Inconsistent Application of Transformations &amp; DataFrame Modifications:</strong>  </li>
+<li>While the code applies many transformations directly to <code>df</code>, it does not always confirm that the new features are stored with the correct naming convention or documented.  </li>
+<li>For example, the <code>major_to_minor_axis_ratio</code> and <code>area_solidity_interaction</code> are created explicitly, but other features like outlier flags are generated with appended suffixes (e.g., <code>_outlier_flag</code>).  </li>
+<li>
+<p>The code does not explicitly check whether the new features are added as intended or whether existing columns are overwritten inadvertently.</p>
+</li>
+<li>
+<p><strong>Potential Data Leakage &amp; Data Integrity:</strong>  </p>
+</li>
+<li>The outlier detection uses the entire dataset for Q1, Q3, and Z-score calculations without considering train/test splits, which could lead to data leakage in a real pipeline.  </li>
+<li>
+<p>The correlation analysis and feature importance are performed on the entire dataset, which might not reflect true model performance if not separated into training and validation sets.</p>
+</li>
+<li>
+<p><strong>Handling of Zero or Negative Values in Log Transform:</strong>  </p>
+</li>
+<li>The shifting for log transformation is correctly handled with a small epsilon, but the code does not explicitly check whether the shift is sufficient or whether the minimum value is exactly zero.  </li>
+<li>
+<p>For features with zeros or negatives, the shift might be insufficient or inconsistent if the minimum value is very close to zero.</p>
+</li>
+<li>
+<p><strong>Feature Importance &amp; Validation Steps:</strong>  </p>
+</li>
+<li>The feature importance via RandomForest is trained on the entire dataset, which may cause data leakage if the dataset is not properly split beforehand.  </li>
+<li>
+<p>The code does not perform any feature selection or multicollinearity reduction based on importance scores or correlation thresholds beyond initial analysis.</p>
+</li>
+<li>
+<p><strong>Naming and Consistency:</strong>  </p>
+</li>
+<li>Some new features are named with underscores, but the code sometimes uses inconsistent casing or suffixes, e.g., <code>'class_encoded'</code> vs <code>'Class_encoded'</code>.  </li>
+<li>
+<p>The code creates some flags with suffix <code>_iqr</code> and <code>_zscore</code>, but the main flag is named simply with <code>_outlier_flag</code>, which may be confusing.</p>
+</li>
+<li>
+<p><strong>Documentation &amp; Reproducibility:</strong>  </p>
+</li>
+<li>While print statements are informative, there is no record of the specific parameters used for outlier detection thresholds, skewness thresholds, or imputation strategies.  </li>
+<li>
+<p>No explicit logging or saving of the transformation steps, parameters, or mappings (e.g., label encoder mapping) for reproducibility.</p>
+</li>
+<li>
+<p><strong>Visualization &amp; Output Management:</strong>  </p>
+</li>
+<li>Plots are created and closed without being saved to files, which is acceptable for in-memory review but conflicts with the instruction to generate visualizations for review and save outputs.  </li>
+<li>
+<p>For audit purposes, saving plots to files in a designated directory would be preferable.</p>
+</li>
+<li>
+<p><strong>Efficiency &amp; Best Practices:</strong>  </p>
+</li>
+<li>Recomputing correlation matrices multiple times could be optimized.  </li>
+<li>The code iterates over features multiple times; consolidating some steps could improve performance.</li>
+</ol>
+<hr />
+<p><strong>Improvement Recommendations:</strong>  </p>
+<ul>
+<li>
+<p><strong>Explicitly Save All Visualizations to Files:</strong><br />
+  Save all generated plots in a dedicated directory (<code>eda_outputs/</code>) with descriptive filenames, ensuring reproducibility and auditability.</p>
+</li>
+<li>
+<p><strong>Standardize Naming Conventions &amp; Documentation:</strong><br />
+  Use consistent naming for all new features and flags. Maintain a dictionary or log of all transformations, parameters, and feature engineering decisions.</p>
+</li>
+<li>
+<p><strong>Separate Data for Outlier Detection &amp; Model Training:</strong><br />
+  For production pipelines, consider computing outlier thresholds on training data only, then applying flags to validation/test sets to prevent leakage.</p>
+</li>
+<li>
+<p><strong>Add Reproducibility &amp; Logging:</strong><br />
+  Save label encoders, imputation strategies, and parameters used. Record correlation thresholds, skewness thresholds, and outlier detection parameters explicitly.</p>
+</li>
+<li>
+<p><strong>Enhance Feature Validation:</strong><br />
+  After feature creation, perform correlation and importance analysis on a validation subset or via cross-validation to avoid overfitting.</p>
+</li>
+<li>
+<p><strong>Optimize Code Structure:</strong><br />
+  Modularize steps into functions for reusability and clarity. For example, create functions for imputation, outlier detection, skewness transformation, and feature creation.</p>
+</li>
+<li>
+<p><strong>Check for Zero/Negative Values Before Log Transformation:</strong><br />
+  Confirm minimum values before shifting and document the shift value used for transparency.</p>
+</li>
+<li>
+<p><strong>Add Comments &amp; Documentation:</strong><br />
+  Include detailed comments explaining each step's purpose, especially for complex transformations or thresholds.</p>
+</li>
+</ul>
+<hr />
+<p><strong>Priority Items:</strong><br />
+1. <strong>Save all visualizations to files</strong> for review, instead of just creating and closing plots in-memory.<br />
+2. <strong>Ensure all new features and flags are added to <code>df</code> with consistent naming conventions</strong> and documented.<br />
+3. <strong>Confirm that transformations do not overwrite or conflict with existing columns</strong> unintentionally.<br />
+4. <strong>Implement data split-aware outlier detection</strong> if applicable, or at least document that current approach uses the entire dataset.<br />
+5. <strong>Record all parameters and thresholds used in feature engineering steps</strong> for reproducibility.</p>
+<hr />
+<p><strong>Summary:</strong><br />
+The implementation demonstrates a solid understanding of feature engineering best practices and adheres closely to the planner’s instructions. Minor adjustments to data handling, documentation, and output management will significantly enhance robustness, transparency, and reproducibility. These improvements will ensure the feature engineering process is both technically sound and audit-ready.</p>
+<h3>🔧 Step 4: Jamie (Refined Implementation)</h3>
+<p><strong>Role:</strong> Developer (Refined)</p>
+<p><strong>Final Refined Code:</strong></p>
+<pre><code class="language-python"># Necessary imports
+import os
+import numpy as np
+import pandas as pd
+import seaborn as sns
+import matplotlib.pyplot as plt
+from sklearn.impute import SimpleImputer
+from sklearn.preprocessing import LabelEncoder
+from sklearn.ensemble import RandomForestClassifier
+from scipy.stats import skew, zscore, f_oneway
+import warnings
+import re
+
+warnings.filterwarnings('ignore')  # Suppress warnings for clean output
+
+# Ensure output directory exists
+output_dir = 'eda_outputs'
+os.makedirs(output_dir, exist_ok=True)
+
+print(f&quot;Initial df.shape: {df.shape}&quot;)
+
+# Initialize log dictionary to record parameters and mappings
+feature_engineering_log = {
+    'imputation': {},
+    'outlier_detection': {'method': ['IQR', 'Z-score'], 'iqr_multiplier': 1.5, 'zscore_threshold': 3},
+    'skewness_threshold': 0.5,
+    'log_transform_shifts': {},
+    'label_encoding': {},
+    'correlation_threshold': 0.8,
+    'features_added': [],
+    'outlier_flags_added': [],
+}
+
+def save_plot(fig, filename):
+    &quot;&quot;&quot;Save matplotlib figure to file and close.&quot;&quot;&quot;
+    filepath = os.path.join(output_dir, filename)
+    fig.savefig(filepath, bbox_inches='tight')
+    plt.close(fig)
+
+try:
+    # 1. Feature Selection and Multicollinearity Analysis
+    print(&quot;\nStep 1: Feature Selection and Multicollinearity Analysis&quot;)
+
+    # Select numeric features excluding boolean outlier flags
+    numeric_features = df.select_dtypes(include=[np.number]).columns.tolist()
+    numeric_features = [f for f in numeric_features if not f.endswith('_outlier_flag')]
+
+    # Compute correlation matrix
+    corr_matrix = df[numeric_features].corr(method='pearson')
+
+    # Identify highly correlated pairs (|corr| &gt; threshold), excluding self-correlation
+    high_corr_pairs = []
+    corr_thresh = feature_engineering_log['correlation_threshold']
+    for i in range(len(corr_matrix.columns)):
+        for j in range(i+1, len(corr_matrix.columns)):
+            f1 = corr_matrix.columns[i]
+            f2 = corr_matrix.columns[j]
+            corr_val = corr_matrix.iloc[i, j]
+            if abs(corr_val) &gt; corr_thresh:
+                high_corr_pairs.append((f1, f2, corr_val))
+
+    print(f&quot;Number of highly correlated pairs (|corr| &gt; {corr_thresh}): {len(high_corr_pairs)}&quot;)
+    if high_corr_pairs:
+        print(&quot;Highly correlated feature pairs (feature1, feature2, corr):&quot;)
+        for pair in high_corr_pairs:
+            print(pair)
+
+    # Save correlation matrix CSV
+    corr_matrix.to_csv(os.path.join(output_dir, 'correlation_matrix.csv'))
+
+    # Plot and save heatmap
+    plt.figure(figsize=(12, 10))
+    heatmap_fig = sns.heatmap(corr_matrix, annot=False, cmap='coolwarm', center=0).get_figure()
+    heatmap_fig.suptitle('Correlation Matrix Heatmap')
+    save_plot(heatmap_fig, 'correlation_matrix_heatmap.png')
+
+    # 2. Missing Data Imputation &amp; Data Quality Checks
+    print(&quot;\nStep 2: Missing Data Imputation &amp; Data Quality Checks&quot;)
+    missing_before = df.isnull().sum()
+    missing_before_nonzero = missing_before[missing_before &gt; 0]
+    if not missing_before_nonzero.empty:
+        print(&quot;Missing values before imputation (non-zero only):&quot;)
+        print(missing_before_nonzero)
+    else:
+        print(&quot;No missing values detected before imputation.&quot;)
+
+    # Separate categorical and numerical features
+    cat_features = df.select_dtypes(include=['object', 'category']).columns.tolist()
+    num_features = df.select_dtypes(include=[np.number]).columns.tolist()
+
+    # Impute numerical features with median
+    try:
+        num_imputer = SimpleImputer(strategy='median')
+        df[num_features] = num_imputer.fit_transform(df[num_features])
+        feature_engineering_log['imputation']['numerical'] = 'median'
+        print(&quot;Numerical features median imputed where missing.&quot;)
+    except Exception as e:
+        print(f&quot;Error during numerical imputation: {e}&quot;)
+
+    # Impute categorical features with mode
+    try:
+        for col in cat_features:
+            if df[col].isnull().sum() &gt; 0:
+                mode_val = df[col].mode(dropna=True)
+                if not mode_val.empty:
+                    df[col].fillna(mode_val[0], inplace=True)
+                    print(f&quot;Categorical feature '{col}' mode imputed.&quot;)
+                else:
+                    print(f&quot;Categorical feature '{col}' has no mode to impute.&quot;)
+        feature_engineering_log['imputation']['categorical'] = 'mode'
+    except Exception as e:
+        print(f&quot;Error during categorical imputation: {e}&quot;)
+
+    missing_after = df.isnull().sum()
+    missing_after_nonzero = missing_after[missing_after &gt; 0]
+    if missing_after_nonzero.empty:
+        print(&quot;No missing values remain after imputation.&quot;)
+    else:
+        print(&quot;Warning: Missing values remain after imputation in columns:&quot;)
+        print(missing_after_nonzero)
+
+    # Save missing data report
+    missing_report = pd.DataFrame({
+        'missing_before': missing_before,
+        'missing_after': missing_after
+    })
+    missing_report.to_csv(os.path.join(output_dir, 'missing_data_report.csv'))
+
+    # 3. Outlier Detection and Flagging
+    print(&quot;\nStep 3: Outlier Detection and Flagging&quot;)
+
+    # Parameters
+    iqr_multiplier = feature_engineering_log['outlier_detection']['iqr_multiplier']
+    zscore_thresh = feature_engineering_log['outlier_detection']['zscore_threshold']
+
+    # We'll create combined outlier flags only, remove intermediate flags after
+    outlier_counts = {}
+
+    for feature in num_features:
+        if feature.endswith('_outlier_flag'):
+            continue  # skip existing flags
+
+        try:
+            Q1 = df[feature].quantile(0.25)
+            Q3 = df[feature].quantile(0.75)
+            IQR = Q3 - Q1
+            lower_bound = Q1 - iqr_multiplier * IQR
+            upper_bound = Q3 + iqr_multiplier * IQR
+
+            # IQR outlier boolean mask
+            iqr_mask = (df[feature] &lt; lower_bound) | (df[feature] &gt; upper_bound)
+
+            # Z-score outlier boolean mask
+            z_scores = zscore(df[feature])
+            z_mask = np.abs(z_scores) &gt; zscore_thresh
+
+            # Combined outlier flag (logical OR)
+            combined_flag = iqr_mask | z_mask
+
+            flag_col = f&quot;{feature.lower()}_outlier_flag&quot;
+
+            # Avoid overwriting existing columns
+            if flag_col in df.columns:
+                print(f&quot;Warning: Outlier flag column '{flag_col}' already exists. Skipping creation.&quot;)
+            else:
+                df[flag_col] = combined_flag
+                feature_engineering_log['outlier_flags_added'].append(flag_col)
+                outlier_counts[feature] = combined_flag.sum()
+
+            # Boxplot with outliers highlighted
+            fig, ax = plt.subplots(figsize=(6, 4))
+            sns.boxplot(x=df[feature], ax=ax)
+            ax.set_title(f'Boxplot of {feature} with Outliers Flagged')
+            save_plot(fig, f'boxplot_{feature.lower()}_outliers.png')
+
+        except Exception as e:
+            print(f&quot;Error processing outliers for feature '{feature}': {e}&quot;)
+
+    print(&quot;Outlier counts per feature (combined IQR and Z-score flags):&quot;)
+    for feat, count in outlier_counts.items():
+        print(f&quot;{feat}: {count}&quot;)
+
+    # 4. Transform Skewed Features
+    print(&quot;\nStep 4: Transform Skewed Features&quot;)
+
+    skew_threshold = feature_engineering_log['skewness_threshold']
+    skewed_features = []
+    for feature in num_features:
+        if feature.endswith('_outlier_flag') or feature.endswith('_encoded'):
+            continue
+        try:
+            feature_skewness = skew(df[feature])
+            if abs(feature_skewness) &gt; skew_threshold:
+                skewed_features.append(feature)
+        except Exception as e:
+            print(f&quot;Error calculating skewness for '{feature}': {e}&quot;)
+
+    print(f&quot;Features identified as skewed (|skew| &gt; {skew_threshold}): {skewed_features}&quot;)
+
+    for feature in skewed_features:
+        try:
+            min_val = df[feature].min()
+            shift = 0.0
+            if min_val &lt;= 0:
+                shift = abs(min_val) + 1e-6
+            feature_engineering_log['log_transform_shifts'][feature] = shift
+
+            transformed_col = f&quot;{feature.lower()}_log1p&quot;
+            if transformed_col in df.columns:
+                print(f&quot;Warning: Log transformed column '{transformed_col}' already exists. Skipping transformation.&quot;)
+                continue
+
+            df[transformed_col] = np.log1p(df[feature] + shift)
+            feature_engineering_log['features_added'].append(transformed_col)
+
+            # Plot before and after histograms with KDE
+            fig, axs = plt.subplots(1, 2, figsize=(12, 4))
+            sns.histplot(df[feature], kde=True, ax=axs[0])
+            axs[0].set_title(f'Original distribution of {feature}')
+            sns.histplot(df[transformed_col], kde=True, ax=axs[1], color='orange')
+            axs[1].set_title(f'Log1p transformed distribution of {feature}')
+            plt.tight_layout()
+            save_plot(fig, f'histogram_{feature.lower()}_log1p.png')
+
+        except Exception as e:
+            print(f&quot;Error transforming feature '{feature}': {e}&quot;)
+
+    # 5. Create Ratio and Interaction Features
+    print(&quot;\nStep 5: Create Ratio and Interaction Features&quot;)
+
+    # Major_to_Minor_Axis_Ratio
+    try:
+        eps = 1e-6
+        minor_axis = df['Minor_Axis_Length'].replace(0, eps)
+        ratio_col = 'major_to_minor_axis_ratio'
+        if ratio_col in df.columns:
+            print(f&quot;Warning: Feature '{ratio_col}' already exists. Skipping creation.&quot;)
+        else:
+            df[ratio_col] = df['Major_Axis_Length'] / minor_axis
+            feature_engineering_log['features_added'].append(ratio_col)
+            print(f&quot;Created feature '{ratio_col}'.&quot;)
+    except Exception as e:
+        print(f&quot;Error creating '{ratio_col}': {e}&quot;)
+
+    # Area_Solidity_Interaction
+    try:
+        interaction_col = 'area_solidity_interaction'
+        if interaction_col in df.columns:
+            print(f&quot;Warning: Feature '{interaction_col}' already exists. Skipping creation.&quot;)
+        else:
+            df[interaction_col] = df['Area'] * df['Solidity']
+            feature_engineering_log['features_added'].append(interaction_col)
+            print(f&quot;Created feature '{interaction_col}'.&quot;)
+    except Exception as e:
+        print(f&quot;Error creating '{interaction_col}': {e}&quot;)
+
+    # Scatter plot for new features colored by Class
+    try:
+        if 'Class' in df.columns:
+            fig, ax = plt.subplots(figsize=(6, 4))
+            sns.scatterplot(x=ratio_col, y=interaction_col, hue='Class', data=df, alpha=0.6, ax=ax)
+            ax.set_title('Scatter plot of major_to_minor_axis_ratio vs area_solidity_interaction by Class')
+            save_plot(fig, 'scatter_major_minor_ratio_vs_area_solidity_interaction.png')
+    except Exception as e:
+        print(f&quot;Error creating scatter plot for new features: {e}&quot;)
+
+    # 6. Categorical Encoding
+    print(&quot;\nStep 6: Categorical Encoding&quot;)
+    try:
+        if 'Class' in df.columns:
+            le = LabelEncoder()
+            encoded_col = 'class_encoded'
+            if encoded_col in df.columns:
+                print(f&quot;Warning: Encoded column '{encoded_col}' already exists. Skipping encoding.&quot;)
+            else:
+                df[encoded_col] = le.fit_transform(df['Class'])
+                feature_engineering_log['label_encoding']['Class'] = dict(zip(le.classes_, le.transform(le.classes_)))
+                print(f&quot;Encoded 'Class' into '{encoded_col}'. Mapping:&quot;)
+                print(feature_engineering_log['label_encoding']['Class'])
+        else:
+            print(&quot;Column 'Class' not found for encoding.&quot;)
+    except Exception as e:
+        print(f&quot;Error encoding 'Class': {e}&quot;)
+
+    # 7. Feature Validation &amp; Selection
+    print(&quot;\nStep 7: Feature Validation &amp; Selection&quot;)
+
+    # Prepare features for correlation and modeling: numeric, exclude outlier flags
+    features_for_corr = [col for col in df.select_dtypes(include=[np.number]).columns
+                         if not col.endswith('_outlier_flag')]
+
+    # Ensure class_encoded is present for modeling
+    if 'class_encoded' not in df.columns:
+        raise ValueError(&quot;Encoded target 'class_encoded' not found. Cannot proceed with validation.&quot;)
+
+    # Recalculate correlation matrix post feature engineering
+    try:
+        corr_matrix_post = df[features_for_corr].corr()
+        corr_matrix_post.to_csv(os.path.join(output_dir, 'correlation_matrix_post_feature_engineering.csv'))
+
+        # Plot and save heatmap
+        plt.figure(figsize=(12, 10))
+        heatmap_fig_post = sns.heatmap(corr_matrix_post, cmap='coolwarm', center=0).get_figure()
+        heatmap_fig_post.suptitle('Post-Feature Engineering Correlation Matrix')
+        save_plot(heatmap_fig_post, 'correlation_matrix_post_feature_engineering_heatmap.png')
+        print(&quot;Recalculated correlation matrix after feature engineering.&quot;)
+    except Exception as e:
+        print(f&quot;Error recalculating correlation matrix: {e}&quot;)
+
+    # Feature importance with RandomForestClassifier
+    try:
+        X = df[features_for_corr].drop(columns=['class_encoded'], errors='ignore')
+        y = df['class_encoded']
+        rf = RandomForestClassifier(random_state=42, n_jobs=-1)
+        rf.fit(X, y)
+        importances = pd.Series(rf.feature_importances_, index=X.columns).sort_values(ascending=False)
+
+        # Save feature importance CSV
+        importances.to_csv(os.path.join(output_dir, 'feature_importance_rf.csv'))
+
+        # Plot and save feature importance
+        fig, ax = plt.subplots(figsize=(10, 6))
+        sns.barplot(x=importances.values, y=importances.index, palette='viridis', ax=ax)
+        ax.set_title('Random Forest Feature Importances')
+        ax.set_xlabel('Importance')
+        ax.set_ylabel('Feature')
+        plt.tight_layout()
+        save_plot(fig, 'feature_importance_rf.png')
+
+        print(&quot;Top 10 features by Random Forest importance:&quot;)
+        print(importances.head(10))
+    except Exception as e:
+        print(f&quot;Error computing feature importance: {e}&quot;)
+
+    # ANOVA tests for each numeric feature across classes
+    print(&quot;\nPerforming ANOVA tests for numeric features across classes...&quot;)
+    try:
+        anova_results = []
+        classes = df['class_encoded'].unique()
+        for feature in features_for_corr:
+            groups = [df[df['class_encoded'] == cls][feature].values for cls in classes]
+            # Only perform ANOVA if all groups have &gt;1 value to avoid errors
+            if all(len(g) &gt; 1 for g in groups):
+                f_stat, p_val = f_oneway(*groups)
+                anova_results.append({'feature': feature, 'f_stat': f_stat, 'p_value': p_val})
+            else:
+                anova_results.append({'feature': feature, 'f_stat': np.nan, 'p_value': np.nan})
+
+        anova_df = pd.DataFrame(anova_results).sort_values('p_value')
+        anova_df.to_csv(os.path.join(output_dir, 'anova_results.csv'), index=False)
+
+        print(&quot;Top 10 features by ANOVA significance (lowest p-values):&quot;)
+        print(anova_df.head(10))
+
+        # Plot -log10(p_value) for significance
+        fig, ax = plt.subplots(figsize=(12, 6))
+        # Replace zero or nan p-values to avoid -inf in log scale
+        safe_p_values = anova_df['p_value'].replace(0, 1e-300).fillna(1)
+        sns.barplot(x='feature', y=-np.log10(safe_p_values), data=anova_df, ax=ax)
+        ax.set_xticklabels(ax.get_xticklabels(), rotation=90)
+        ax.set_title('ANOVA Significance (-log10 p-value) per Feature')
+        ax.set_ylabel('-log10(p-value)')
+        plt.tight_layout()
+        save_plot(fig, 'anova_significance.png')
+    except Exception as e:
+        print(f&quot;Error performing ANOVA tests: {e}&quot;)
+
+    # 8. Documentation &amp; Final Checks
+    print(&quot;\nStep 8: Documentation &amp; Final Checks&quot;)
+    try:
+        # Confirm no missing data remains
+        missing_final = df.isnull().sum()
+        if missing_final.sum() == 0:
+            print(&quot;No missing data remains after all imputations.&quot;)
+        else:
+            print(&quot;Warning: Missing data remains in columns:&quot;)
+            print(missing_final[missing_final &gt; 0])
+
+        # Summarize new columns added (features and outlier flags)
+        new_cols = feature_engineering_log['features_added'] + feature_engineering_log['outlier_flags_added']
+        print(f&quot;New columns added ({len(new_cols)}): {new_cols}&quot;)
+
+        # Check naming conventions (snake_case)
+        # Allow lowercase letters, digits, and underscores only
+        non_snake_case = [col for col in df.columns if not re.match(r'^[a-z0-9_]+$', col)]
+        if non_snake_case:
+            print(&quot;Warning: Some columns do not follow snake_case naming conventions:&quot;)
+            print(non_snake_case)
+        else:
+            print(&quot;All columns follow snake_case naming conventions.&quot;)
+
+        # Print feature engineering log summary
+        print(&quot;\nFeature Engineering Log Summary:&quot;)
+        for key, val in feature_engineering_log.items():
+            print(f&quot;{key}: {val}&quot;)
+
+    except Exception as e:
+        print(f&quot;Error during final checks: {e}&quot;)
+
+except Exception as e:
+    print(f&quot;Unexpected error in feature engineering pipeline: {e}&quot;)
+
+print(f&quot;\nFinal df.shape: {df.shape}&quot;)
+</code></pre>
+<h3>🖥 Execution Results</h3>
+<p><strong>Status:</strong> ✅ Success</p>
+<pre><code>Initial df.shape: (2500, 30)
+
+Step 1: Feature Selection and Multicollinearity Analysis
+Number of highly correlated pairs (|corr| &gt; 0.8): 23
+Highly correlated feature pairs (feature1, feature2, corr):
+('Area', 'Perimeter', 0.9285482614585041)
+('Area', 'Convex_Area', 0.9998058721440372)
+('Area', 'Equiv_Diameter', 0.9984640201244298)
+('Area', 'Area_Solidity_Interaction', 0.9998150826362262)
+('Perimeter', 'Major_Axis_Length', 0.9461806914713098)
+('Perimeter', 'Convex_Area', 0.9299712101902254)
+('Perimeter', 'Equiv_Diameter', 0.9280550978547997)
+('Perimeter', 'Area_Solidity_Interaction', 0.9268122657656356)
+('Convex_Area', 'Equiv_Diameter', 0.9982885738209126)
+('Convex_Area', 'Area_Solidity_Interaction', 0.9992422232151104)
+('Equiv_Diameter', 'Area_Solidity_Interaction', 0.9982600945649929)
+('Eccentricity', 'Roundness', -0.8906512824090574)
+('Eccentricity', 'Aspect_Ration', 0.9502252913953649)
+('Eccentricity', 'Compactness', -0.9816889269199136)
+('Eccentricity', 'Major_to_Minor_Axis_Ratio', 0.9502250818990593)
+('Solidity', 'Solidity_log1p', 0.9999797513779531)
+('Extent', 'Extent_log1p', 0.9997628132775868)
+('Roundness', 'Aspect_Ration', -0.9352326470686824)
+('Roundness', 'Compactness', 0.9333081312797992)
+('Roundness', 'Major_to_Minor_Axis_Ratio', -0.9352334935638953)
+('Aspect_Ration', 'Compactness', -0.9907783200237014)
+('Aspect_Ration', 'Major_to_Minor_Axis_Ratio', 0.99999999581548)
+('Compactness', 'Major_to_Minor_Axis_Ratio', -0.9907783372700788)
+
+Step 2: Missing Data Imputation &amp; Data Quality Checks
+No missing values detected before imputation.
+Numerical features median imputed where missing.
+No missing values remain after imputation.
+
+Step 3: Outlier Detection and Flagging
+Outlier counts per feature (combined IQR and Z-score flags):
+Area: 18
+Perimeter: 16
+Major_Axis_Length: 21
+Minor_Axis_Length: 30
+Convex_Area: 17
+Equiv_Diameter: 13
+Eccentricity: 18
+Solidity: 103
+Extent: 46
+Roundness: 5
+Aspect_Ration: 11
+Compactness: 2
+Class_encoded: 0
+Solidity_log1p: 107
+Extent_log1p: 63
+Major_to_Minor_Axis_Ratio: 11
+Area_Solidity_Interaction: 19
+
+Step 4: Transform Skewed Features
+Features identified as skewed (|skew| &gt; 0.5): ['Major_Axis_Length', 'Eccentricity', 'Solidity', 'Extent', 'Aspect_Ration', 'Solidity_log1p', 'Extent_log1p', 'Major_to_Minor_Axis_Ratio']
+
+Step 5: Create Ratio and Interaction Features
+Created feature 'major_to_minor_axis_ratio'.
+Created feature 'area_solidity_interaction'.
+
+Step 6: Categorical Encoding
+Encoded 'Class' into 'class_encoded'. Mapping:
+{'Çerçevelik': 0, 'Ürgüp Sivrisi': 1}
+
+Step 7: Feature Validation &amp; Selection
+Recalculated correlation matrix after feature engineering.
+Top 10 features by Random Forest importance:
+Class_encoded                      0.391900
+major_to_minor_axis_ratio_log1p    0.088290
+aspect_ration_log1p                0.078611
+major_to_minor_axis_ratio          0.073022
+Eccentricity                       0.065178
+Aspect_Ration                      0.048477
+Compactness                        0.044667
+Major_to_Minor_Axis_Ratio          0.041203
+eccentricity_log1p                 0.040128
+Major_Axis_Length                  0.027737
+dtype: float64
+
+Performing ANOVA tests for numeric features across classes...
+Top 10 features by ANOVA significance (lowest p-values):
+                            feature       f_stat  p_value
+27                    class_encoded          inf      0.0
+18               eccentricity_log1p  2317.024975      0.0
+15        Major_to_Minor_Axis_Ratio  2716.908816      0.0
+12                    Class_encoded          inf      0.0
+11                      Compactness  2795.022444      0.0
+21              aspect_ration_log1p  2796.040643      0.0
+9                         Roundness  2029.403166      0.0
+10                    Aspect_Ration  2716.923219      0.0
+6                      Eccentricity  2390.900770      0.0
+24  major_to_minor_axis_ratio_log1p  2796.027913      0.0
+
+Step 8: Documentation &amp; Final Checks
+No missing data remains after all imputations.
+New columns added (27): ['major_axis_length_log1p', 'eccentricity_log1p', 'solidity_log1p', 'extent_log1p', 'aspect_ration_log1p', 'solidity_log1p_log1p', 'extent_log1p_log1p', 'major_to_minor_axis_ratio_log1p', 'major_to_minor_axis_ratio', 'area_solidity_interaction', 'area_outlier_flag', 'perimeter_outlier_flag', 'major_axis_length_outlier_flag', 'minor_axis_length_outlier_flag', 'convex_area_outlier_flag', 'equiv_diameter_outlier_flag', 'eccentricity_outlier_flag', 'solidity_outlier_flag', 'extent_outlier_flag', 'roundness_outlier_flag', 'aspect_ration_outlier_flag', 'compactness_outlier_flag', 'class_encoded_outlier_flag', 'solidity_log1p_outlier_flag', 'extent_log1p_outlier_flag', 'major_to_minor_axis_ratio_outlier_flag', 'area_solidity_interaction_outlier_flag']
+Warning: Some columns do not follow snake_case naming conventions:
+['Area', 'Perimeter', 'Major_Axis_Length', 'Minor_Axis_Length', 'Convex_Area', 'Equiv_Diameter', 'Eccentricity', 'Solidity', 'Extent', 'Roundness', 'Aspect_Ration', 'Compactness', 'Class', 'Area_outlier_flag', 'Perimeter_outlier_flag', 'Major_Axis_Length_outlier_flag', 'Minor_Axis_Length_outlier_flag', 'Convex_Area_outlier_flag', 'Equiv_Diameter_outlier_flag', 'Eccentricity_outlier_flag', 'Solidity_outlier_flag', 'Extent_outlier_flag', 'Roundness_outlier_flag', 'Aspect_Ration_outlier_flag', 'Compactness_outlier_flag', 'Class_encoded', 'Solidity_log1p', 'Extent_log1p', 'Major_to_Minor_Axis_Ratio', 'Area_Solidity_Interaction']
+
+Feature Engineering Log Summary:
+imputation: {'numerical': 'median', 'categorical': 'mode'}
+outlier_detection: {'method': ['IQR', 'Z-score'], 'iqr_multiplier': 1.5, 'zscore_threshold': 3}
+skewness_threshold: 0.5
+log_transform_shifts: {'Major_Axis_Length': 0.0, 'Eccentricity': 0.0, 'Solidity': 0.0, 'Extent': 0.0, 'Aspect_Ration': 0.0, 'Solidity_log1p': 0.0, 'Extent_log1p': 0.0, 'Major_to_Minor_Axis_Ratio': 0.0}
+label_encoding: {'Class': {'Çerçevelik': 0, 'Ürgüp Sivrisi': 1}}
+correlation_threshold: 0.8
+features_added: ['major_axis_length_log1p', 'eccentricity_log1p', 'solidity_log1p', 'extent_log1p', 'aspect_ration_log1p', 'solidity_log1p_log1p', 'extent_log1p_log1p', 'major_to_minor_axis_ratio_log1p', 'major_to_minor_axis_ratio', 'area_solidity_interaction']
+outlier_flags_added: ['area_outlier_flag', 'perimeter_outlier_flag', 'major_axis_length_outlier_flag', 'minor_axis_length_outlier_flag', 'convex_area_outlier_flag', 'equiv_diameter_outlier_flag', 'eccentricity_outlier_flag', 'solidity_outlier_flag', 'extent_outlier_flag', 'roundness_outlier_flag', 'aspect_ration_outlier_flag', 'compactness_outlier_flag', 'class_encoded_outlier_flag', 'solidity_log1p_outlier_flag', 'extent_log1p_outlier_flag', 'major_to_minor_axis_ratio_outlier_flag', 'area_solidity_interaction_outlier_flag']
+
+Final df.shape: (2500, 58)
+</code></pre>
+<h3>📊 Process Summary</h3>
+<ul>
+<li><strong>Planner Agent:</strong> Alex</li>
+<li><strong>Developer Agent:</strong> Jamie</li>
+<li><strong>Auditor Agent:</strong> Taylor</li>
+<li><strong>Final Status:</strong> Success</li>
+<li><strong>Iterations:</strong> 4-step iterative process completed</li>
+</ul>
+<hr />
+<h2>📈 Overall Process Summary</h2>
+<ul>
+<li><strong>Total Subtasks:</strong> 7</li>
+<li><strong>Successful Subtasks:</strong> 7</li>
+<li><strong>Success Rate:</strong> 100.0%</li>
+</ul></body></html>

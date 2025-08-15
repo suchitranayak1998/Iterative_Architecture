@@ -1,0 +1,5 @@
+Iterative Process: Exploratory Data Analysis (EDA) took 283.52s
+Tokens — total: 123853, prompt: 114325, completion: 9528
+Estimated API cost: $0.0543
+Architecture: 3-Agent Iterative (Planner → Developer → Auditor → Developer)
+Agents: ['Alice', 'Bob', 'Carol']
