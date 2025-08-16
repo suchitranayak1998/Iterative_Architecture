@@ -1,0 +1,4 @@
+Iterative Process: Feature Engineering took 307.54s
+Tokens — total: 386330, prompt: 372737, completion: 13593
+Estimated API cost: $0.1708
+Architecture: 3-Agent Iterative (Planner → Developer → Auditor → Developer)

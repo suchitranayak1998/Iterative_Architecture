@@ -1,0 +1,207 @@
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>EDA Summary Report</title>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; margin: 20px; }
+        h1, h2, h3 { color: #2c3e50; }
+        table { border-collapse: collapse; width: 80%; margin-bottom: 20px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
+        th { background-color: #f2f2f2; }
+        ul { margin-top: 0; }
+        .section { margin-bottom: 40px; }
+    </style>
+</head>
+<body>
+
+<h1>Exploratory Data Analysis (EDA) Summary</h1>
+
+<div class="section">
+    <h2>1. Data Overview and Summary Statistics</h2>
+    <h3>Key Findings:</h3>
+    <ul>
+        <li>Dataset contains 2,500 samples with 12 numerical features and 1 categorical target variable <code>Class</code>.</li>
+        <li>Numerical features have appropriate data types (int64 or float64), and the target <code>Class</code> is categorical (object).</li>
+        <li>Summary statistics indicate moderate variability across features; for example, <code>Area</code> ranges from ~47,939 to 136,574 with mean ~80,658.</li>
+        <li>Features like <code>Solidity</code> and <code>Extent</code> have very narrow standard deviations, indicating low variance.</li>
+    </ul>
+
+    <h3>Summary Statistics Table (Numerical Features):</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Feature</th><th>Count</th><th>Mean</th><th>Std Dev</th><th>Min</th><th>25%</th><th>50%</th><th>75%</th><th>Max</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr><td>Area</td><td>2500</td><td>80658.22</td><td>13664.51</td><td>47939</td><td>70765</td><td>79076</td><td>89757.5</td><td>136574</td></tr>
+            <tr><td>Perimeter</td><td>2500</td><td>1130.28</td><td>109.26</td><td>868.49</td><td>1048.83</td><td>1123.67</td><td>1203.34</td><td>1559.45</td></tr>
+            <tr><td>Major_Axis_Length</td><td>2500</td><td>456.60</td><td>56.24</td><td>320.84</td><td>414.96</td><td>449.50</td><td>492.74</td><td>661.91</td></tr>
+            <tr><td>Minor_Axis_Length</td><td>2500</td><td>225.79</td><td>23.30</td><td>152.17</td><td>211.25</td><td>224.70</td><td>240.67</td><td>305.82</td></tr>
+            <tr><td>Convex_Area</td><td>2500</td><td>81508.08</td><td>13764.09</td><td>48366</td><td>71512</td><td>79872</td><td>90797.75</td><td>138384</td></tr>
+            <tr><td>Equiv_Diameter</td><td>2500</td><td>319.33</td><td>26.89</td><td>247.06</td><td>300.17</td><td>317.31</td><td>338.06</td><td>417.00</td></tr>
+            <tr><td>Eccentricity</td><td>2500</td><td>0.86</td><td>0.045</td><td>0.49</td><td>0.83</td><td>0.86</td><td>0.90</td><td>0.95</td></tr>
+            <tr><td>Solidity</td><td>2500</td><td>0.99</td><td>0.0035</td><td>0.92</td><td>0.99</td><td>0.99</td><td>0.99</td><td>0.99</td></tr>
+            <tr><td>Extent</td><td>2500</td><td>0.69</td><td>0.061</td><td>0.47</td><td>0.66</td><td>0.71</td><td>0.74</td><td>0.83</td></tr>
+            <tr><td>Roundness</td><td>2500</td><td>0.79</td><td>0.056</td><td>0.55</td><td>0.75</td><td>0.80</td><td>0.83</td><td>0.94</td></tr>
+            <tr><td>Aspect_Ration</td><td>2500</td><td>2.04</td><td>0.32</td><td>1.15</td><td>1.80</td><td>1.98</td><td>2.26</td><td>3.14</td></tr>
+            <tr><td>Compactness</td><td>2500</td><td>0.70</td><td>0.053</td><td>0.56</td><td>0.66</td><td>0.71</td><td>0.74</td><td>0.90</td></tr>
+        </tbody>
+    </table>
+</div>
+
+<div class="section">
+    <h2>2. Missing Values and Data Types Analysis</h2>
+    <h3>Key Findings:</h3>
+    <ul>
+        <li>No missing or null values detected in any feature or target column.</li>
+        <li>Data types are consistent and appropriate: numerical features as int64 or float64, target <code>Class</code> as categorical (object).</li>
+    </ul>
+</div>
+
+<div class="section">
+    <h2>3. Distribution Analysis of Numerical Features</h2>
+    <h3>Key Findings:</h3>
+    <ul>
+        <li>Most numerical features exhibit approximately symmetric distributions with skewness values between -0.75 and 0.55.</li>
+        <li><code>Solidity</code> and <code>Extent</code> show strong left skewness (-5.69 and -1.03 respectively), indicating a concentration of high values and potential need for transformation.</li>
+        <li>Symmetric distributions suggest many features may not require heavy transformation, but skewed features should be considered for normalization or transformation during feature engineering.</li>
+    </ul>
+
+    <h3>Skewness Summary for Selected Features:</h3>
+    <table>
+        <thead>
+            <tr><th>Feature</th><th>Skewness</th><th>Interpretation</th></tr>
+        </thead>
+        <tbody>
+            <tr><td>Area</td><td>0.496</td><td>Approximately symmetric</td></tr>
+            <tr><td>Perimeter</td><td>0.415</td><td>Approximately symmetric</td></tr>
+            <tr><td>Solidity</td><td>-5.691</td><td>Highly left-skewed, consider transformation</td></tr>
+            <tr><td>Extent</td><td>-1.027</td><td>Highly left-skewed, consider transformation</td></tr>
+            <tr><td>Aspect_Ration</td><td>0.548</td><td>Approximately symmetric</td></tr>
+        </tbody>
+    </table>
+</div>
+
+<div class="section">
+    <h2>4. Correlation Analysis</h2>
+    <h3>Key Findings:</h3>
+    <ul>
+        <li>Strong positive correlations (&gt;0.9) exist among <code>Area</code>, <code>Convex_Area</code>, <code>Equiv_Diameter</code>, and <code>Perimeter</code>, indicating potential redundancy.</li>
+        <li><code>Major_Axis_Length</code> and <code>Perimeter</code> also show high correlation (~0.95).</li>
+        <li>Strong negative correlations observed between <code>Compactness</code> and <code>Aspect_Ration</code> (-0.99), and between <code>Roundness</code> and <code>Aspect_Ration</code> (-0.94).</li>
+        <li>Features like <code>Eccentricity</code>, <code>Roundness</code>, <code>Aspect_Ration</code>, and <code>Compactness</code> are highly interrelated, suggesting dimensionality reduction or feature selection may be beneficial.</li>
+    </ul>
+
+    <h3>Implications for Feature Selection:</h3>
+    <ul>
+        <li>Consider removing or combining highly correlated features to reduce multicollinearity.</li>
+        <li>Features with unique variance and lower correlation (e.g., <code>Solidity</code>, <code>Extent</code>) may add value despite skewness.</li>
+    </ul>
+</div>
+
+<div class="section">
+    <h2>5. Class Distribution Analysis</h2>
+    <h3>Key Findings:</h3>
+    <ul>
+        <li>Two classes: <code>Çerçevelik</code> (1,300 samples, 52%) and <code>Ürgüp Sivrisi</code> (1,200 samples, 48%).</li>
+        <li>Class distribution is balanced, so no immediate need for class imbalance handling techniques.</li>
+    </ul>
+
+    <h3>Class Distribution Table:</h3>
+    <table>
+        <thead>
+            <tr><th>Class</th><th>Count</th><th>Proportion</th></tr>
+        </thead>
+        <tbody>
+            <tr><td>Çerçevelik</td><td>1300</td><td>52%</td></tr>
+            <tr><td>Ürgüp Sivrisi</td><td>1200</td><td>48%</td></tr>
+        </tbody>
+    </table>
+</div>
+
+<div class="section">
+    <h2>6. Outlier Detection</h2>
+    <h3>Key Findings:</h3>
+    <ul>
+        <li>Outliers detected in most numerical features using the IQR method, but counts are generally low relative to dataset size.</li>
+        <li>Notable outlier counts:
+            <ul>
+                <li><code>Solidity</code>: 103 potential outliers (highest)</li>
+                <li><code>Extent</code>: 46 potential outliers</li>
+                <li><code>Minor_Axis_Length</code>: 30 potential outliers</li>
+            </ul>
+        </li>
+        <li>Outlier treatment strategies (e.g., winsorization, trimming, or robust scaling) should be considered during feature engineering.</li>
+    </ul>
+
+    <h3>Outlier Counts Summary (Selected Features):</h3>
+    <table>
+        <thead>
+            <tr><th>Feature</th><th>Number of Potential Outliers</th></tr>
+        </thead>
+        <tbody>
+            <tr><td>Area</td><td>18</td></tr>
+            <tr><td>Perimeter</td><td>16</td></tr>
+            <tr><td>Major_Axis_Length</td><td>21</td></tr>
+            <tr><td>Minor_Axis_Length</td><td>30</td></tr>
+            <tr><td>Solidity</td><td>103</td></tr>
+            <tr><td>Extent</td><td>46</td></tr>
+            <tr><td>Compactness</td><td>2</td></tr>
+        </tbody>
+    </table>
+</div>
+
+<div class="section">
+    <h2>7. Feature Relationships Visualization</h2>
+    <h3>Key Findings:</h3>
+    <ul>
+        <li>Strongly correlated features identified for pairwise visualization include:
+            <code>Area, Perimeter, Major_Axis_Length, Convex_Area, Equiv_Diameter, Aspect_Ration, Compactness, Eccentricity, Roundness</code>.</li>
+        <li>Pair plots with <code>Class</code> as hue were generated to observe class-wise separability and feature interactions.</li>
+        <li>Visualizations saved at: <code>../output/tables/pairplot_strong_corr_features.png</code>.</li>
+    </ul>
+
+    <h3>Implications:</h3>
+    <ul>
+        <li>Visual insights will guide feature engineering, e.g., interaction terms or nonlinear transformations.</li>
+        <li>Class separation patterns in pair plots can inform feature importance and model selection.</li>
+    </ul>
+</div>
+
+<div class="section">
+    <h2>8. Data Quality Checks</h2>
+    <h3>Key Findings:</h3>
+    <ul>
+        <li>Two unique classes confirmed in target variable.</li>
+        <li>No duplicate rows found, ensuring data integrity.</li>
+        <li>Feature scales and units appear consistent with no invalid values detected (e.g., no negative or zero values in <code>Aspect_Ration</code>).</li>
+        <li>No inconsistencies such as <code>Convex_Area &lt; Area</code> found.</li>
+    </ul>
+</div>
+
+<div class="section">
+    <h2>Final Summary and Recommendations</h2>
+    <ul>
+        <li><strong>Data Quality:</strong> Dataset is clean with no missing values, duplicates, or invalid entries.</li>
+        <li><strong>Feature Distributions:</strong> Most features are approximately symmetric; however, <code>Solidity</code> and <code>Extent</code> are highly skewed and may require transformation.</li>
+        <li><strong>Outliers:</strong> Present but limited in number; consider robust scaling or outlier treatment during feature engineering.</li>
+        <li><strong>Feature Correlations:</strong> High multicollinearity among size-related features (<code>Area</code>, <code>Convex_Area</code>, <code>Perimeter</code>, etc.) suggests dimensionality reduction or feature selection is needed.</li>
+        <li><strong>Class Balance:</strong> Target classes are balanced, simplifying model training without special imbalance techniques.</li>
+        <li><strong>Next Steps:</strong>
+            <ul>
+                <li>Apply transformations to skewed features.</li>
+                <li>Perform feature selection or extraction to address multicollinearity.</li>
+                <li>Incorporate outlier handling strategies.</li>
+                <li>Leverage pair plot insights for feature engineering.</li>
+                <li>Proceed to model building with balanced classes and clean data.</li>
+            </ul>
+        </li>
+    </ul>
+</div>
+
+</body>
+</html>
+```

@@ -1,0 +1,257 @@
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Feature Engineering Report Summary</title>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; margin: 20px; }
+        h1, h2, h3 { color: #2F4F4F; }
+        table { border-collapse: collapse; width: 80%; margin-bottom: 20px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
+        th { background-color: #f2f2f2; }
+        ul { margin-top: 0; }
+        .section { margin-bottom: 40px; }
+    </style>
+</head>
+<body>
+
+<h1>Feature Engineering Report Summary</h1>
+
+<div class="section">
+    <h2>1. Handling Missing Values</h2>
+    <h3>Summary</h3>
+    <ul>
+        <li>No missing values were detected in any of the dataset columns.</li>
+        <li>No imputation or data cleaning was necessary for missing data.</li>
+    </ul>
+    <h3>Key Output</h3>
+    <pre>
+Missing values per column:
+Area                 0
+Perimeter            0
+Major_Axis_Length    0
+Minor_Axis_Length    0
+Convex_Area          0
+Equiv_Diameter       0
+Eccentricity         0
+Solidity             0
+Extent               0
+Roundness            0
+Aspect_Ration        0
+Compactness          0
+Class                0
+    </pre>
+</div>
+
+<div class="section">
+    <h2>2. Encoding Categorical Variables</h2>
+    <h3>Summary</h3>
+    <ul>
+        <li>Identified 'Class' as the sole categorical variable with two unique categories: 'Çerçevelik' and 'Ürgüp Sivrisi'.</li>
+        <li>Applied Label Encoding to convert 'Class' into numerical format (0 and 1), suitable for model consumption.</li>
+    </ul>
+    <h3>Key Output</h3>
+    <pre>
+Categorical columns identified: ['Class']
+Unique categories: ['Çerçevelik', 'Ürgüp Sivrisi']
+Sample encoded values:
+0    0
+1    0
+2    0
+3    0
+4    0
+Name: Class, dtype: int64
+    </pre>
+</div>
+
+<div class="section">
+    <h2>3. Creating Interaction Features</h2>
+    <h3>Summary</h3>
+    <ul>
+        <li>Generated new interaction features by multiplying and dividing logically related numerical features.</li>
+        <li>These interaction terms capture combined effects that may improve model predictive power.</li>
+        <li>Summary statistics indicate reasonable variance and distribution across these new features.</li>
+    </ul>
+    <h3>Important Interaction Features Summary Statistics</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Feature</th>
+                <th>Mean</th>
+                <th>Std Dev</th>
+                <th>Min</th>
+                <th>Median (50%)</th>
+                <th>Max</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr><td>Area_x_Perimeter</td><td>9.26e+07</td><td>2.46e+07</td><td>4.16e+07</td><td>8.92e+07</td><td>2.13e+08</td></tr>
+            <tr><td>Major_Axis_Length_x_Minor_Axis_Length</td><td>1.03e+05</td><td>1.75e+04</td><td>6.11e+04</td><td>1.01e+05</td><td>1.77e+05</td></tr>
+            <tr><td>Roundness_x_Aspect_Ration</td><td>1.60</td><td>0.14</td><td>0.94</td><td>1.59</td><td>1.97</td></tr>
+            <tr><td>Solidity_x_Extent</td><td>0.69</td><td>0.06</td><td>0.46</td><td>0.71</td><td>0.82</td></tr>
+            <tr><td>Compactness_x_Roundness</td><td>0.56</td><td>0.08</td><td>0.33</td><td>0.56</td><td>0.81</td></tr>
+        </tbody>
+    </table>
+</div>
+
+<div class="section">
+    <h2>4. Generating Polynomial Features</h2>
+    <h3>Summary</h3>
+    <ul>
+        <li>Added squared and cubed polynomial features for all numerical columns to capture non-linear relationships.</li>
+        <li>Created polynomial interaction terms between selected squared features to further enrich feature space.</li>
+        <li>Summary statistics show wide ranges and variances, indicating these features add complexity and potential predictive power.</li>
+        <li>Visualizations (not included here) confirmed reasonable distributions and class separability with polynomial features.</li>
+    </ul>
+    <h3>Sample Polynomial Features Summary Statistics</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Feature</th>
+                <th>Mean</th>
+                <th>Std Dev</th>
+                <th>Min</th>
+                <th>Median (50%)</th>
+                <th>Max</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr><td>Area_sq</td><td>6.69e+09</td><td>2.31e+09</td><td>2.30e+09</td><td>6.25e+09</td><td>1.87e+10</td></tr>
+            <tr><td>Perimeter_sq</td><td>1.29e+06</td><td>2.52e+05</td><td>7.54e+05</td><td>1.26e+06</td><td>2.43e+06</td></tr>
+            <tr><td>Major_Axis_Length_sq</td><td>2.12e+05</td><td>5.31e+04</td><td>1.03e+05</td><td>2.02e+05</td><td>4.38e+05</td></tr>
+            <tr><td>Area_cube</td><td>5.71e+14</td><td>3.05e+14</td><td>1.10e+14</td><td>4.94e+14</td><td>2.55e+15</td></tr>
+            <tr><td>Roundness_sq_x_Aspect_Ration_sq</td><td>2.58</td><td>0.45</td><td>0.89</td><td>2.53</td><td>3.90</td></tr>
+        </tbody>
+    </table>
+</div>
+
+<div class="section">
+    <h2>5. Scaling Numerical Features</h2>
+    <h3>Summary</h3>
+    <ul>
+        <li>Applied both standardization (zero mean, unit variance) and normalization (min-max scaling) to 54 numerical features including original, interaction, and polynomial features.</li>
+        <li>Scaling ensures features are on comparable scales, improving model convergence and performance, especially for distance-based or gradient-based algorithms.</li>
+        <li>Summary statistics confirm successful scaling with means near zero and standard deviations near one for standardized features, and normalized features bounded between 0 and 1.</li>
+    </ul>
+    <h3>Sample Feature Scaling Statistics</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Feature</th>
+                <th>Original Mean</th>
+                <th>Original Std Dev</th>
+                <th>Standardized Mean</th>
+                <th>Standardized Std Dev</th>
+                <th>Normalized Range</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr><td>Area</td><td>80658.22</td><td>13664.51</td><td>0.00</td><td>1.00</td><td>0 to 1</td></tr>
+            <tr><td>Perimeter</td><td>1130.28</td><td>109.26</td><td>0.00</td><td>1.00</td><td>0 to 1</td></tr>
+            <tr><td>Major_Axis_Length</td><td>456.60</td><td>56.24</td><td>0.00</td><td>1.00</td><td>0 to 1</td></tr>
+            <tr><td>Minor_Axis_Length</td><td>225.80</td><td>23.30</td><td>0.00</td><td>1.00</td><td>0 to 1</td></tr>
+            <tr><td>Convex_Area</td><td>81508.08</td><td>13764.09</td><td>0.00</td><td>1.00</td><td>0 to 1</td></tr>
+        </tbody>
+    </table>
+</div>
+
+<div class="section">
+    <h2>6. Feature Selection</h2>
+    <h3>Summary</h3>
+    <ul>
+        <li>Performed correlation analysis and Random Forest model-based importance scoring.</li>
+        <li>Top features by correlation and importance largely overlapped, with <code>Roundness_sq_x_Aspect_Ration_sq</code> and <code>Major_Axis_Length_std</code> leading.</li>
+        <li>No features were dropped due to high correlation (>0.95) or low importance (<0.001), indicating a well-curated feature set.</li>
+        <li>Feature selection rationale focused on reducing redundancy, improving interpretability, and maintaining model performance.</li>
+        <li>Model accuracy remained stable after feature selection (Mean=0.8836, Std=0.0115), confirming no loss in predictive power.</li>
+    </ul>
+    <h3>Top Features by Correlation with Target</h3>
+    <table>
+        <thead>
+            <tr><th>Feature</th><th>Absolute Correlation</th></tr>
+        </thead>
+        <tbody>
+            <tr><td>Roundness_sq_x_Aspect_Ration_sq</td><td>0.719</td></tr>
+            <tr><td>Major_Axis_Length_std</td><td>0.561</td></tr>
+            <tr><td>Perimeter_cube</td><td>0.397</td></tr>
+            <tr><td>Minor_Axis_Length_cube_norm</td><td>0.377</td></tr>
+            <tr><td>Solidity_div_Extent</td><td>0.264</td></tr>
+        </tbody>
+    </table>
+    <h3>Top Features by Random Forest Importance</h3>
+    <table>
+        <thead>
+            <tr><th>Feature</th><th>Importance Score</th></tr>
+        </thead>
+        <tbody>
+            <tr><td>Roundness_sq_x_Aspect_Ration_sq</td><td>0.411</td></tr>
+            <tr><td>Major_Axis_Length_std</td><td>0.171</td></tr>
+            <tr><td>Minor_Axis_Length_cube_norm</td><td>0.096</td></tr>
+            <tr><td>Compactness_div_Roundness_norm</td><td>0.076</td></tr>
+            <tr><td>Solidity_div_Extent</td><td>0.057</td></tr>
+        </tbody>
+    </table>
+</div>
+
+<div class="section">
+    <h2>7. Dimensionality Reduction</h2>
+    <h3>Summary</h3>
+    <ul>
+        <li>Applied Principal Component Analysis (PCA) to reduce feature space from 9 to 4 components.</li>
+        <li>The first four components explain approximately 95.5% of the variance:</li>
+        <ul>
+            <li>PC1: 42.86%</li>
+            <li>PC2: 27.53%</li>
+            <li>PC3: 16.40%</li>
+            <li>PC4: 8.64%</li>
+        </ul>
+        <li>PCA can be used for visualization, noise reduction, and potentially improving model efficiency.</li>
+    </ul>
+    <h3>Explained Variance Ratio</h3>
+    <pre>[0.42855424, 0.27527048, 0.16395084, 0.08642144]</pre>
+</div>
+
+<div class="section">
+    <h2>8. Model Evaluation Metrics Summary</h2>
+    <h3>Available Results</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Model Version</th>
+                <th>Mean Accuracy</th>
+                <th>Std Dev Accuracy</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Original Model (All Features)</td>
+                <td>0.8836</td>
+                <td>0.0115</td>
+            </tr>
+            <tr>
+                <td>Reduced Feature Model</td>
+                <td>0.8836</td>
+                <td>0.0115</td>
+            </tr>
+        </tbody>
+    </table>
+    <p><em>No degradation in accuracy observed after feature selection, indicating robustness of selected features.</em></p>
+</div>
+
+<div class="section">
+    <h2>Final Summary and Recommendations</h2>
+    <ul>
+        <li><strong>Data Quality:</strong> Dataset is clean with no missing values, simplifying preprocessing.</li>
+        <li><strong>Feature Engineering:</strong> Encoding, interaction, polynomial, and scaling transformations have enriched the feature space effectively.</li>
+        <li><strong>Feature Selection:</strong> Careful selection based on correlation and model importance retained a compact, non-redundant feature set without loss in accuracy.</li>
+        <li><strong>Dimensionality Reduction:</strong> PCA offers a promising approach for visualization and efficiency gains, capturing >95% variance in 4 components.</li>
+        <li><strong>Modeling Implications:</strong> The engineered features, especially interaction and polynomial terms like <code>Roundness_sq_x_Aspect_Ration_sq</code>, are highly predictive and should be prioritized in model building.</li>
+        <li><strong>Business Hypotheses:</strong> Complex shape descriptors and their interactions (e.g., roundness and aspect ratio) are critical in distinguishing classes, suggesting domain-specific morphological characteristics drive classification.</li>
+        <li><strong>Next Steps:</strong> Proceed to model building using the selected features and consider PCA components for alternative modeling pipelines. Evaluate models with cross-validation and monitor for overfitting given the enriched feature space.</li>
+    </ul>
+</div>
+
+</body>
+</html>
+```

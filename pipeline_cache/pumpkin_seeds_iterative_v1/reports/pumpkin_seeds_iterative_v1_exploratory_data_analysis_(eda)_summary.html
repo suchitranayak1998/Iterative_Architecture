@@ -1,0 +1,212 @@
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>EDA Summary Report</title>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; margin: 20px; }
+        h1, h2, h3 { color: #2F4F4F; }
+        table { border-collapse: collapse; width: 100%; margin-bottom: 20px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
+        th { background-color: #f2f2f2; }
+        pre { background-color: #f9f9f9; padding: 10px; border-left: 3px solid #2F4F4F; overflow-x: auto; }
+        ul { margin-top: 0; }
+    </style>
+</head>
+<body>
+
+<h1>Exploratory Data Analysis (EDA) Summary Report</h1>
+
+<!-- Subtask 1 -->
+<h2>1. Data Overview and Summary Statistics</h2>
+<h3>Key Findings</h3>
+<ul>
+    <li>Dataset contains 2,500 records with 12 numerical features and 1 categorical target feature ('Class').</li>
+    <li>Numerical features such as <code>Area</code>, <code>Perimeter</code>, and <code>Major_Axis_Length</code> show moderate spread (std dev) and ranges consistent with expected physical measurements.</li>
+    <li>Target variable 'Class' has two categories: <strong>Çerçevelik (1300 samples)</strong> and <strong>Ürgüp Sivrisi (1200 samples)</strong>, indicating a fairly balanced classification problem.</li>
+</ul>
+
+<h3>Important Summary Statistics Table (Numerical Features)</h3>
+<pre><code>Count: 2500 for all numerical features
+Mean (selected):
+- Area: 80,658
+- Perimeter: 1130.28
+- Major_Axis_Length: 456.60
+- Minor_Axis_Length: 225.79
+- Solidity: 0.9895 (very close to 1, indicating compact shapes)
+Min and Max values show no extreme anomalies beyond expected ranges.</code></pre>
+
+<h3>Class Distribution</h3>
+<table>
+    <thead>
+        <tr><th>Class</th><th>Count</th></tr>
+    </thead>
+    <tbody>
+        <tr><td>Çerçevelik</td><td>1300</td></tr>
+        <tr><td>Ürgüp Sivrisi</td><td>1200</td></tr>
+    </tbody>
+</table>
+
+<hr />
+
+<!-- Subtask 2 -->
+<h2>2. Missing Values and Data Types Check</h2>
+<h3>Key Findings</h3>
+<ul>
+    <li>No missing or null values detected in any feature, ensuring data completeness.</li>
+    <li>Data types are appropriate: numerical features are mostly <code>float64</code> or <code>int64</code>, and the target 'Class' is categorical (<code>object</code> type).</li>
+</ul>
+
+<hr />
+
+<!-- Subtask 3 -->
+<h2>3. Distribution Analysis of Numerical Features</h2>
+<h3>Key Patterns and Anomalies</h3>
+<ul>
+    <li>Most numerical features exhibit mild positive skewness (e.g., Area: 0.50, Perimeter: 0.41), except for features like <code>Eccentricity</code> (-0.75 skew) and <code>Solidity</code> (-5.69 skew) which are heavily left-skewed.</li>
+    <li><code>Solidity</code> shows extremely high kurtosis (80.96), indicating a highly peaked distribution with heavy tails.</li>
+    <li>Features like <code>Extent</code> and <code>Eccentricity</code> also show moderate kurtosis, suggesting some outlier presence or non-normality.</li>
+</ul>
+
+<h3>Implications for Feature Engineering</h3>
+<ul>
+    <li>Features with strong skewness/kurtosis (e.g., Solidity, Eccentricity) may benefit from transformations (e.g., log, Box-Cox) to normalize distributions before modeling.</li>
+    <li>Normality assumptions for some models may be violated; consider robust or non-parametric models or feature scaling.</li>
+</ul>
+
+<hr />
+
+<!-- Subtask 4 -->
+<h2>4. Correlation Analysis Among Features</h2>
+<h3>Key Insights</h3>
+<ul>
+    <li>Strong positive correlations (>0.9) exist among <code>Area</code>, <code>Convex_Area</code>, <code>Equiv_Diameter</code>, and <code>Perimeter</code>, indicating potential multicollinearity.</li>
+    <li><code>Major_Axis_Length</code> and <code>Perimeter</code> also highly correlated (0.95).</li>
+    <li>Strong negative correlations observed between <code>Compactness</code> and <code>Aspect_Ration</code> (-0.99), and between <code>Roundness</code> and <code>Aspect_Ration</code> (-0.94).</li>
+    <li>Some features like <code>Eccentricity</code> correlate strongly with <code>Aspect_Ration</code> (0.95) and negatively with <code>Compactness</code> (-0.98), suggesting overlapping information.</li>
+</ul>
+
+<h3>Recommendations for Feature Selection</h3>
+<ul>
+    <li>Consider dimensionality reduction or feature selection to address multicollinearity (e.g., PCA, removing redundant features).</li>
+    <li>Features with very high correlation may be combined or one dropped to reduce noise and improve model stability.</li>
+</ul>
+
+<hr />
+
+<!-- Subtask 5 -->
+<h2>5. Class Distribution Analysis</h2>
+<h3>Summary</h3>
+<ul>
+    <li>Classes are nearly balanced: 1300 vs 1200 samples.</li>
+    <li>No immediate need for class balancing techniques such as oversampling or undersampling.</li>
+</ul>
+
+<hr />
+
+<!-- Subtask 6 -->
+<h2>6. Outlier Detection in Numerical Features</h2>
+<h3>Outlier Summary Table</h3>
+<table>
+    <thead>
+        <tr>
+            <th>Feature</th>
+            <th>IQR Outliers Count</th>
+            <th>IQR Outliers %</th>
+            <th>Z-score Outliers Count</th>
+            <th>Z-score Outliers %</th>
+            <th>Mean (All)</th>
+            <th>Std (All)</th>
+            <th>Mean (Without Outliers)</th>
+            <th>Std (Without Outliers)</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr><td>Area</td><td>18</td><td>0.72%</td><td>13</td><td>0.52%</td><td>80658.22</td><td>13664.51</td><td>80331.08</td><td>13152.69</td></tr>
+        <tr><td>Perimeter</td><td>16</td><td>0.64%</td><td>8</td><td>0.32%</td><td>1130.28</td><td>109.26</td><td>1128.08</td><td>106.08</td></tr>
+        <tr><td>Major_Axis_Length</td><td>21</td><td>0.84%</td><td>8</td><td>0.32%</td><td>456.60</td><td>56.24</td><td>455.17</td><td>54.25</td></tr>
+        <tr><td>Minor_Axis_Length</td><td>30</td><td>1.20%</td><td>9</td><td>0.36%</td><td>225.79</td><td>23.30</td><td>225.73</td><td>22.26</td></tr>
+        <tr><td>Convex_Area</td><td>17</td><td>0.68%</td><td>13</td><td>0.52%</td><td>81508.08</td><td>13764.09</td><td>81194.39</td><td>13269.30</td></tr>
+        <tr><td>Equiv_Diameter</td><td>13</td><td>0.52%</td><td>9</td><td>0.36%</td><td>319.33</td><td>26.89</td><td>318.89</td><td>26.25</td></tr>
+        <tr><td>Eccentricity</td><td>18</td><td>0.72%</td><td>14</td><td>0.56%</td><td>0.8609</td><td>0.0452</td><td>0.8621</td><td>0.0428</td></tr>
+        <tr><td>Solidity</td><td>103</td><td>4.12%</td><td>29</td><td>1.16%</td><td>0.9895</td><td>0.0035</td><td>0.9900</td><td>0.0022</td></tr>
+        <tr><td>Extent</td><td>46</td><td>1.84%</td><td>13</td><td>0.52%</td><td>0.6932</td><td>0.0609</td><td>0.6965</td><td>0.0563</td></tr>
+        <tr><td>Roundness</td><td>5</td><td>0.20%</td><td>4</td><td>0.16%</td><td>0.7915</td><td>0.0559</td><td>0.7919</td><td>0.0553</td></tr>
+        <tr><td>Aspect_Ration</td><td>11</td><td>0.44%</td><td>8</td><td>0.32%</td><td>2.0417</td><td>0.3160</td><td>2.0373</td><td>0.3098</td></tr>
+        <tr><td>Compactness</td><td>2</td><td>0.08%</td><td>2</td><td>0.08%</td><td>0.7041</td><td>0.0531</td><td>0.7040</td><td>0.0528</td></tr>
+    </tbody>
+</table>
+
+<h3>Outlier Treatment Recommendations</h3>
+<ul>
+    <li>Outliers are generally low in proportion (<5%), but <code>Solidity</code> has the highest outlier percentage (~4.1% by IQR).</li>
+    <li>Consider capping or transformation for features with notable outliers to reduce their impact on model training.</li>
+    <li>Visual confirmation via boxplots/scatter plots is recommended before final treatment.</li>
+</ul>
+
+<hr />
+
+<!-- Subtask 7 -->
+<h2>7. Feature Relationships Visualization</h2>
+<h3>Analytical Insights</h3>
+<ul>
+    <li>Scatter plots of key feature pairs (e.g., Perimeter vs Area, Minor_Axis_Length vs Major_Axis_Length) show some class separability and clustering patterns.</li>
+    <li>Pair plots reveal complex relationships and potential nonlinear separability between classes across numerical features.</li>
+    <li>Violin plots indicate distribution differences between classes for most numerical features, suggesting these features are informative for classification.</li>
+</ul>
+
+<h3>Implications for Modeling</h3>
+<ul>
+    <li>Features demonstrate potential discriminative power; consider interaction terms or nonlinear transformations during feature engineering.</li>
+    <li>Visual patterns support the use of models capable of capturing complex boundaries (e.g., tree-based models, SVM with kernels, neural networks).</li>
+</ul>
+
+<hr />
+
+<!-- Subtask 8 -->
+<h2>8. Data Quality and Consistency Checks</h2>
+<h3>Key Results</h3>
+<ul>
+    <li>No duplicate records found, ensuring data uniqueness.</li>
+    <li>All numerical values fall within expected min/max ranges from summary statistics.</li>
+    <li>Logical consistency checks passed with zero violations:
+        <ul>
+            <li>Area never exceeds Convex_Area.</li>
+            <li>Perimeter always greater than or equal to Major and Minor Axis Lengths.</li>
+            <li>Area matches ellipse area approximation within 30% tolerance.</li>
+            <li>Aspect_Ration consistent with ratio of Major_Axis_Length to Minor_Axis_Length within 0.1 tolerance.</li>
+        </ul>
+    </li>
+</ul>
+
+<h3>Conclusion</h3>
+<ul>
+    <li>Dataset is clean, consistent, and reliable for downstream modeling.</li>
+</ul>
+
+<hr />
+
+<!-- Final Summary -->
+<h2>Final Summary and Recommendations</h2>
+<ul>
+    <li><strong>Data Quality:</strong> Dataset is complete, consistent, and free of duplicates or missing values.</li>
+    <li><strong>Feature Distributions:</strong> Some features exhibit skewness and kurtosis requiring transformation for improved model performance.</li>
+    <li><strong>Outliers:</strong> Present but low in proportion; features like Solidity require attention.</li>
+    <li><strong>Feature Correlations:</strong> High multicollinearity detected among several numerical features; dimensionality reduction or feature selection is advised.</li>
+    <li><strong>Class Balance:</strong> Target classes are balanced, simplifying classification modeling.</li>
+    <li><strong>Visual Insights:</strong> Feature relationships and class separability patterns support use of nonlinear and interaction-aware models.</li>
+</ul>
+
+<h3>Next Steps for AI Agents</h3>
+<ul>
+    <li>Implement feature transformations (e.g., log, Box-Cox) on skewed features.</li>
+    <li>Address multicollinearity via feature selection or dimensionality reduction (e.g., PCA).</li>
+    <li>Consider outlier treatment strategies such as capping or robust scaling.</li>
+    <li>Engineer interaction features based on visualized relationships.</li>
+    <li>Proceed to model building with algorithms capable of handling complex feature interactions and distributions.</li>
+</ul>
+
+</body>
+</html>
+```

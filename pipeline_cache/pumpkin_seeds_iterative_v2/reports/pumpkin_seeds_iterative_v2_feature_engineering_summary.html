@@ -1,0 +1,344 @@
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Feature Engineering Summary Report</title>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; margin: 20px; }
+        h1, h2, h3 { color: #2F4F4F; }
+        table { border-collapse: collapse; width: 80%; margin-bottom: 20px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        pre { background-color: #f9f9f9; padding: 10px; border-left: 4px solid #ccc; overflow-x: auto; }
+        ul { margin-top: 0; }
+    </style>
+</head>
+<body>
+
+<h1>Feature Engineering Summary Report</h1>
+
+<h2>1. Handle Missing Values</h2>
+<h3>Summary</h3>
+<ul>
+    <li>No missing values were detected in any feature column.</li>
+    <li>No imputation or special handling was required, preserving data integrity.</li>
+</ul>
+
+<h2>2. Encode Categorical Variable</h2>
+<h3>Summary</h3>
+<ul>
+    <li>The target variable <code>Class</code> was label encoded into numerical values:</li>
+</ul>
+<pre><code>Çerçevelik: 0
+Ürgüp Sivrisi: 1
+</code></pre>
+<ul>
+    <li>Encoding ensures compatibility with machine learning algorithms and consistency across datasets.</li>
+</ul>
+
+<h2>3. Feature Scaling</h2>
+<h3>Key Patterns & Transformations</h3>
+<ul>
+    <li>Skewness of numerical features ranged from low to moderate; skewness values guided scaling method choice.</li>
+    <li>Standardization (zero mean, unit variance) was applied to most features with low/moderate skewness.</li>
+    <li>Min-Max Normalization (scaled to [0,1]) was applied to features with higher skewness or negative skew.</li>
+</ul>
+
+<h3>Example Feature Scaling Details</h3>
+<table>
+    <thead>
+        <tr>
+            <th>Feature</th>
+            <th>Skewness</th>
+            <th>Scaling Method</th>
+            <th>Original Mean</th>
+            <th>Scaled Mean</th>
+            <th>Original Std</th>
+            <th>Scaled Std</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Area</td>
+            <td>0.496</td>
+            <td>Standardization</td>
+            <td>80658.22</td>
+            <td>~0</td>
+            <td>13664.51</td>
+            <td>1</td>
+        </tr>
+        <tr>
+            <td>Perimeter</td>
+            <td>0.415</td>
+            <td>Standardization</td>
+            <td>1130.28</td>
+            <td>~0</td>
+            <td>109.26</td>
+            <td>1</td>
+        </tr>
+        <tr>
+            <td>Major_Axis_Length</td>
+            <td>0.503</td>
+            <td>Min-Max Normalization</td>
+            <td>456.60</td>
+            <td>0.398</td>
+            <td>56.24</td>
+            <td>0.165</td>
+        </tr>
+    </tbody>
+</table>
+
+<h2>4. Create Interaction Features</h2>
+<h3>Insights</h3>
+<ul>
+    <li>New interaction features were created by combining existing features (e.g., division, multiplication).</li>
+    <li>Correlation with target <code>Class_encoded</code> was computed to evaluate relevance.</li>
+    <li><code>Perimeter_div_MajorAxis</code> showed the strongest negative correlation (-0.700), indicating high predictive potential.</li>
+    <li>Other interaction features such as <code>Major_Axis_Length</code> and <code>Perimeter_MajorAxis</code> also showed moderate positive correlations.</li>
+</ul>
+
+<h3>Top Interaction Features by Correlation with Target</h3>
+<pre><code>Perimeter_div_MajorAxis          -0.700318
+Major_Axis_Length                 0.561458
+Perimeter_MajorAxis               0.493680
+Perimeter                         0.388345
+Area_MajorAxis                    0.359567
+</code></pre>
+
+<h2>5. Generate Polynomial Features</h2>
+<h3>Summary</h3>
+<ul>
+    <li>Polynomial features up to degree 3 were generated from 12 base numerical features.</li>
+    <li>The feature space expanded from 12 to 454 polynomial features.</li>
+    <li>Sample polynomial features include squared terms and interaction terms such as <code>poly_Areapow2</code>, <code>poly_Area_Perimeter</code>, and <code>poly_Area_Major_Axis_Length</code>.</li>
+    <li>Careful monitoring of dimensionality is necessary to avoid overfitting in subsequent modeling.</li>
+</ul>
+
+<h2>6. Feature Selection</h2>
+<h3>Analytical Insights</h3>
+<ul>
+    <li>489 numeric features were considered for selection.</li>
+    <li>Three complementary methods were used:
+        <ul>
+            <li>Pearson correlation with target</li>
+            <li>Mutual information</li>
+            <li>Random Forest feature importance</li>
+        </ul>
+    </li>
+    <li>Top features from each method showed strong agreement, especially on polynomial features involving <code>Eccentricity</code>, <code>Solidity</code>, <code>Aspect_Ration</code>, and <code>Compactness</code>.</li>
+    <li>Combined top 30 features were identified and saved for modeling.</li>
+</ul>
+
+<h3>Top 5 Features by Pearson Correlation</h3>
+<pre><code>poly_Eccentricity_Compactnesspow2              0.733671
+poly_Solidity_Aspect_Ration_Compactness        0.729057
+EquivDiameter_div_MajorAxis                    0.726676
+Compactness                                    0.726676
+poly_Compactness                               0.726676
+</code></pre>
+
+<h3>Top 5 Features by Mutual Information</h3>
+<pre><code>poly_Soliditypow2_Aspect_Ration              0.391143
+poly_Eccentricitypow2_Solidity                 0.382249
+poly_Eccentricity_Soliditypow2                  0.380091
+Perimeter_div_MajorAxis                         0.379419
+poly_Solidity_Aspect_Ration_Compactness         0.377676
+</code></pre>
+
+<h3>Top 5 Features by Random Forest Importance</h3>
+<pre><code>poly_Eccentricity_Solidity                     0.044422
+poly_Eccentricity_Soliditypow2                   0.039451
+poly_Solidity_Roundness_Aspect_Ration            0.035399
+poly_Compactnesspow3                             0.035122
+poly_Eccentricity_Aspect_Rationpow2              0.033746
+</code></pre>
+
+<h2>7. Dimensionality Reduction</h2>
+<h3>Summary</h3>
+<ul>
+    <li>Principal Component Analysis (PCA) was applied to reduce dimensionality.</li>
+    <li>Only 3 components were needed to retain at least 95% of the variance.</li>
+    <li>Feature space reduced from 489 to 3 dimensions, significantly simplifying the dataset and reducing overfitting risk.</li>
+</ul>
+
+<h2>8. Feature Transformation</h2>
+<h3>Key Patterns</h3>
+<ul>
+    <li>Skewed features were transformed using Box-Cox transformations with feature-specific lambda values.</li>
+    <li>Features with low skewness (e.g., Area, Perimeter) were left untransformed.</li>
+    <li>Transformations effectively reduced skewness close to zero, improving feature distribution normality.</li>
+</ul>
+
+<h3>Examples of Transformations</h3>
+<table>
+    <thead>
+        <tr>
+            <th>Feature</th>
+            <th>Original Skewness</th>
+            <th>Transformation</th>
+            <th>Lambda</th>
+            <th>Skewness After Transformation</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Major_Axis_Length</td>
+            <td>0.503</td>
+            <td>Box-Cox</td>
+            <td>-0.630</td>
+            <td>0.009</td>
+        </tr>
+        <tr>
+            <td>Eccentricity</td>
+            <td>-0.749</td>
+            <td>Box-Cox</td>
+            <td>5.232</td>
+            <td>-0.052</td>
+        </tr>
+        <tr>
+            <td>Solidity</td>
+            <td>-5.691</td>
+            <td>Box-Cox</td>
+            <td>171.543</td>
+            <td>-0.137</td>
+        </tr>
+        <tr>
+            <td>Aspect_Ration</td>
+            <td>0.548</td>
+            <td>Box-Cox</td>
+            <td>-0.596</td>
+            <td>0.015</td>
+        </tr>
+    </tbody>
+</table>
+
+<h2>9. Outlier Treatment</h2>
+<h3>Key Observations</h3>
+<ul>
+    <li>Outliers were identified on 17 features using IQR and z-score methods.</li>
+    <li>IQR method detected outliers ranging from 5 (Roundness) to 103 (Solidity) on various features.</li>
+    <li>Z-score method flagged outliers on Area (13), Perimeter (8), and Major_Axis_Length (8).</li>
+    <li>Outliers were capped to reduce their impact, preserving data while mitigating skewed influence on models.</li>
+</ul>
+
+<h3>Outlier Summary Table (IQR Method)</h3>
+<table>
+    <thead>
+        <tr>
+            <th>Feature</th>
+            <th>Lower Bound</th>
+            <th>Upper Bound</th>
+            <th>Lower Outliers</th>
+            <th>Upper Outliers</th>
+            <th>Total Outliers</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr><td>Area</td><td>42276.25</td><td>118246.2</td><td>0</td><td>18</td><td>18</td></tr>
+        <tr><td>Perimeter</td><td>817.06</td><td>1435.11</td><td>0</td><td>16</td><td>16</td></tr>
+        <tr><td>Major_Axis_Length</td><td>298.29</td><td>609.41</td><td>0</td><td>21</td><td>21</td></tr>
+        <tr><td>Minor_Axis_Length</td><td>167.11</td><td>284.81</td><td>14</td><td>16</td><td>30</td></tr>
+        <tr><td>Solidity</td><td>0.9835</td><td>0.9963</td><td>103</td><td>0</td><td>103</td></tr>
+        <tr><td>Roundness</td><td>0.6283</td><td>0.9579</td><td>5</td><td>0</td><td>5</td></tr>
+        <!-- Additional rows omitted for brevity -->
+    </tbody>
+</table>
+
+<h2>10. Feature Aggregation</h2>
+<h3>Summary</h3>
+<ul>
+    <li>New aggregate features were created to summarize related feature groups into indices:</li>
+    <ul>
+        <li><strong>Size_Index</strong></li>
+        <li><strong>Shape_Index</strong></li>
+        <li><strong>Ratio_Index</strong></li>
+        <li><strong>Poly_Interaction_Index</strong></li>
+    </ul>
+    <li>These aggregates help reduce feature space and capture higher-level information relevant to the target.</li>
+</ul>
+
+<h3>Aggregate Feature Statistics</h3>
+<table>
+    <thead>
+        <tr>
+            <th>Aggregate Feature</th>
+            <th>Count</th>
+            <th>Mean</th>
+            <th>Std Dev</th>
+            <th>Min</th>
+            <th>25%</th>
+            <th>50%</th>
+            <th>75%</th>
+            <th>Max</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Size_Index</td>
+            <td>2500</td>
+            <td>0.066</td>
+            <td>0.793</td>
+            <td>-2.027</td>
+            <td>-0.506</td>
+            <td>-0.016</td>
+            <td>0.609</td>
+            <td>3.095</td>
+        </tr>
+        <tr>
+            <td>Shape_Index</td>
+            <td>2500</td>
+            <td>0.641</td>
+            <td>0.035</td>
+            <td>0.356</td>
+            <td>0.622</td>
+            <td>0.650</td>
+            <td>0.667</td>
+            <td>0.708</td>
+        </tr>
+        <tr>
+            <td>Ratio_Index</td>
+            <td>2500</td>
+            <td>0.313</td>
+            <td>0.083</td>
+            <td>0.050</td>
+            <td>0.256</td>
+            <td>0.316</td>
+            <td>0.371</td>
+            <td>0.626</td>
+        </tr>
+        <tr>
+            <td>Poly_Interaction_Index</td>
+            <td>2500</td>
+            <td>0.296</td>
+            <td>0.143</td>
+            <td>0.008</td>
+            <td>0.189</td>
+            <td>0.276</td>
+            <td>0.382</td>
+            <td>1.000</td>
+        </tr>
+    </tbody>
+</table>
+
+<h2>11. Model Evaluation Metrics and Results</h2>
+<p>No explicit model evaluation metrics or results were provided in this report phase.</p>
+
+<hr>
+<h2>Final Summary and Recommendations</h2>
+<ul>
+    <li><strong>Data Quality:</strong> Dataset is clean with no missing values, enabling straightforward feature engineering.</li>
+    <li><strong>Encoding:</strong> Target variable successfully encoded for modeling.</li>
+    <li><strong>Scaling & Transformation:</strong> Appropriate scaling and Box-Cox transformations applied to normalize feature distributions and reduce skewness, improving model assumptions.</li>
+    <li><strong>Feature Expansion:</strong> Interaction and polynomial features significantly expanded feature space (up to 489 features), capturing complex relationships but increasing dimensionality.</li>
+    <li><strong>Feature Selection:</strong> Combined statistical and model-based methods identified a focused set of ~30 top features, balancing complexity and predictive power.</li>
+    <li><strong>Dimensionality Reduction:</strong> PCA reduced dimensionality to 3 components retaining 95% variance, offering an alternative compact feature set.</li>
+    <li><strong>Outlier Treatment:</strong> Outliers identified and capped to mitigate their influence, improving model robustness.</li>
+    <li><strong>Feature Aggregation:</strong> Composite indices created to summarize feature groups, aiding interpretability and dimensionality reduction.</li>
+    <li><strong>Next Steps:</strong> Use selected features and/or PCA components for model building. Evaluate models with and without polynomial features and aggregated indices to balance performance and complexity.</li>
+    <li><strong>Business Hypotheses:</strong> Features related to shape and compactness (e.g., Solidity, Aspect Ratio, Eccentricity) are highly predictive of the target class, suggesting these physical characteristics are key differentiators.</li>
+</ul>
+
+</body>
+</html>
+```

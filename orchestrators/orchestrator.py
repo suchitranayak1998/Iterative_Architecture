@@ -87,46 +87,127 @@ class IterativeOrchestrator:
         schema_info = self.df.dtypes.to_string()
         return f"Schema:\n{schema_info}\n\nSummary:\n{summary_stats}"
 
-    def decompose_task(self):
+    # def decompose_task(self):
+    #     """
+    #     Use Planner agent to decompose the main task into subtasks
+    #     """
+    #     # Get prior context
+    #     previous_subtasks = self.pipeline_state.get_all_subtasks()
+    #     previous_transforms = self.pipeline_state.get_recent_transforms()
+
+    #     # Format context
+    #     subtask_text = "\n".join(f"- {s}" for s in previous_subtasks) or "None"
+    #     transform_text = "\n".join(f"- {t}" for t in previous_transforms) or "None"
+    #     summary_text = self.summary if self.summary else "No prior tasks."
+
+    #     try:
+    #         prompt_template = PROMPT_TEMPLATES["decompose"][self.topic]
+    #     except KeyError:
+    #         raise ValueError(f"No decompose prompt defined for task: {self.topic}")
+
+    #     prompt = prompt_template.format(
+    #         subtask_history=subtask_text,
+    #         transform_history=transform_text,
+    #         summary=summary_text,
+    #         context=self.context,
+    #         pipeline_config=format_pipeline_config_for_prompt(PIPELINE_CONFIG)
+    #     )
+
+    #     messages = [
+    #         SystemMessage(content="You are a strategic planner decomposing data science tasks."),
+    #         HumanMessage(content=prompt)
+    #     ]
+        
+    #     response = self.llm(messages).content
+    #     self.subtasks = [
+    #         line.strip("0123456789. ").strip() 
+    #         for line in response.split("\n") 
+    #         if line.strip()
+    #     ]
+        
+    #     return self.subtasks
+    
+    def ask_for_clarification(self,subtask, error_log):
         """
-        Use Planner agent to decompose the main task into subtasks
+        Ask an expert agent (e.g., Manager) for clarification on the subtask that failed.
+        Can be extended to ask a specific agent role if needed.
         """
-        # Get prior context
-        previous_subtasks = self.pipeline_state.get_all_subtasks()
-        previous_transforms = self.pipeline_state.get_recent_transforms()
+        log_entries = [
+                f"""### Attempt {entry['retry']}
+            **Traceback:**
+            {entry['traceback']}
+            **Code:**
+                ```python
+                {entry['code']}
+                ```"""
+                    for entry in error_log
+                    if entry["subtask"] == subtask
+                ]
+        error_summary = "\n\n".join(log_entries)
+        
+        prompt = f"""
+        You are the **Manager** in a collaborative AI team working on a multi-step machine learning pipeline. 
 
-        # Format context
-        subtask_text = "\n".join(f"- {s}" for s in previous_subtasks) or "None"
-        transform_text = "\n".join(f"- {t}" for t in previous_transforms) or "None"
-        summary_text = self.summary if self.summary else "No prior tasks."
+        The **Developer** has attempted to complete the following subtask multiple times but failed due to repeated execution errors.
 
-        try:
-            prompt_template = ITERATIVE_PROMPT_TEMPLATES["decompose"][self.topic]
-        except KeyError:
-            raise ValueError(f"No decompose prompt defined for task: {self.topic}")
+        ---
 
-        prompt = prompt_template.format(
-            subtask_history=subtask_text,
-            transform_history=transform_text,
-            summary=summary_text,
-            context=self.context,
-            pipeline_config=format_pipeline_config_for_prompt(PIPELINE_CONFIG)
-        )
+        ## 🧩 Task Topic:
+        {self.topic}
 
+        ## 🔨 Subtask:
+        "{subtask}"
+
+        ## 🔁 Retry Attempts and Errors:
+        {error_summary}
+
+        ---
+
+        Your job is to help the Developer understand the problem and get unblocked — by analyzing the traceback, diagnosing the possible issues, and suggesting the high-level logic for resolving it.
+
+        ### 🎯 Your Objectives:
+        1. **Interpret the subtask clearly.**  
+        - What is this subtask asking for?
+        - What kind of logic or outcome is expected?
+
+        2. **Analyze the errors and failed attempts.**  
+        - What does the traceback suggest?
+        - What lines or logic are most likely causing the issue?
+        - What data or columns are likely missing or malformed?
+
+        3. **Suggest corrective logic (NO CODE).**  
+        - What Could be the root cause of the failure?
+        - What assumptions might be incorrect?
+        - What steps could solve the issue?
+        - If the problem is due to a missing column, bad assumption, or plot function misuse — state it clearly.
+
+        ---
+
+        ### 📌 Response Format:
+
+        - **Subtask Interpretation:**  
+        Explain in sentences what this subtask likely intends to achieve.
+
+        - **Diagnosis:**  
+        A list of bullet points highlighting:
+            - What failed
+            - Where it failed
+            - Why it might have failed
+
+        - **Suggested Fixes (no code):**  
+        Provide steps outlining how the Developer should change their logic or assumptions to succeed.
+
+        Do not generate any code. Focus only on understanding and reasoning.
+
+        """
         messages = [
-            SystemMessage(content="You are a strategic planner decomposing data science tasks."),
+            SystemMessage(content="You are a helpful manager clarifying data science subtasks."),
             HumanMessage(content=prompt)
-        ]
-        
-        response = self.llm(messages).content
-        self.subtasks = [
-            line.strip("0123456789. ").strip() 
-            for line in response.split("\n") 
-            if line.strip()
-        ]
-        
-        return self.subtasks
+            ]
+        response = self.llm_coder(messages)
 
+        return response.content.strip()
+    
     def dev_call(self, subtask, instruction, code_history, prior_transforms, column_catalog, df_copy = None):
 
         max_retries = 5
@@ -153,7 +234,7 @@ class IterativeOrchestrator:
                 print(f"⚠️ Developer code failed (attempt {retry_count + 1}). Asking Developer to debug...\n")
                 clarification = self.ask_for_clarification(
                         subtask=subtask,
-                        error_log=self.error_log
+                        error_log=attempt_log
                     )
                 clarification = f"# 🔍 Clarification:\n# {clarification}\n\n" 
 
@@ -190,7 +271,6 @@ class IterativeOrchestrator:
         return success, execution_result, plot_images, attempt_log, code
 
 
-    
     def run(self):
         """
         Execute the complete iterative workflow with sequential-style subtask execution
@@ -203,6 +283,7 @@ class IterativeOrchestrator:
         )
 
         print(f"📋 Planner produced {len(plan.subtasks)} subtasks.")
+
         pairs: List[Tuple[str, str]] = [
             (s.strip(), p.strip())
             for s, p in zip(plan.subtasks or [], plan.implementation_plan or [])
@@ -222,6 +303,7 @@ class IterativeOrchestrator:
             print(f"{idx}. {subtask}")
             
             auditor_accept = 0
+            attempt_log = []
             # Get context that applies to all subtasks (like sequential)
             code_history = "\n\n---\n\n".join(self.pipeline_state.get_recent_code_history(n=5))
             code_history_list = self.pipeline_state.get_recent_code_history(n=5)
@@ -234,8 +316,7 @@ class IterativeOrchestrator:
             prior_transforms = "\n".join(self.pipeline_state.get_recent_transforms())
             column_catalog = self.executor.get_column_catalog()
 
-            print("plan:", plan)
-            instruction = plan
+            print("plan:", instruction)
 
             df_copy = self.executor.df.copy()
 
@@ -319,7 +400,4 @@ class IterativeOrchestrator:
             )
 
 
-        return {
-            "plan": plan,
-            "results": results
-        }
+        return results

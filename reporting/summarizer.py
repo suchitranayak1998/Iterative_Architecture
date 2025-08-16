@@ -5,9 +5,9 @@ from langchain_core.messages import SystemMessage, HumanMessage
 from core import pipeline_state
 
 class ReportSummarizer:
-    def __init__(self, results: list, title: str, output_path: str, llm, pipeline_state=None, phase_name: str = None):
+    def __init__(self, results: list, task: str, output_path: str, llm, pipeline_state=None, phase_name: str = None):
         self.results = results or []
-        self.title = title
+        self.task = task
         self.output_path = output_path
         self.report_text = ""
         self.summary_html = ""
@@ -16,7 +16,7 @@ class ReportSummarizer:
         self.phase_name = phase_name   
 
     def generate_markdown(self) -> str:
-        report = f"# {self.title}\n\n"
+        report = f"# {self.task}\n\n"
 
         for idx, entry in enumerate(self.results, 1):
             subtask = entry.get("subtask", f"Subtask {idx}")
@@ -58,7 +58,7 @@ Summarize the following report. Your summary should be structured and Comprehens
 
             This report is intended to guide the team of AI Agents in transitioning from Exploratory Data Analysis (EDA) to Feature Engineering to Model Building, and Model Evaluation.
 
-Report for: {self.title}
+Report for: {self.task}
 {self.report_text}
 """
         messages = [

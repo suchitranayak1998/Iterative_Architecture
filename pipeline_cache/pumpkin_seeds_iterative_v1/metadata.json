@@ -1,0 +1,19 @@
+{
+  "project_name": "pumpkin_seeds_iterative_v1",
+  "original_hash": null,
+  "df_shape": [
+    2500,
+    13
+  ],
+  "completed_phases": [
+    "Exploratory Data Analysis (EDA)",
+    "Model Selection & Evaluation",
+    "Feature Engineering"
+  ],
+  "last_updated": "2025-08-16T01:31:47.709573",
+  "total_subtasks": 25,
+  "total_transforms": 19,
+  "total_iterative_processes": 0,
+  "save_directory": "pipeline_cache/pumpkin_seeds_iterative_v1",
+  "architecture": "3-agent iterative"
+}
